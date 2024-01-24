@@ -24,52 +24,61 @@ impl Particle {
     Self { pos, vel }
   }
 
-  fn shape(&self, neighbors: (Particle, Particle, Particle, Particle)) -> char {
-    match (self.pos.clamp(0., 0.91) * 10.) as u32 {
-      0 => '0',
-      1 => '1',
-      2 => '2',
-      3 => '3',
-      4 => '4',
-      5 => '5',
-      6 => '6',
-      7 => '7',
-      8 => '8',
-      9 => '9',
-      _ => panic!("what"),
-    }
-    // enum Cat {
-    //   H,
-    //   L,
-    // }
-    // let cat = |particle: Particle| {
-    //   if particle.pos > 0.6 {
-    //     Cat::H
-    //   } else {
-    //     Cat::L
-    //   }
-    // };
+  fn shape(&self, neighbors: (Particle, Particle, Particle, Particle)) -> (char, String) {
+    //match (self.pos.clamp(0., 0.91) * 10.) as u32 {
+    //  0 => '0',
+    //  1 => '1',
+    //  2 => '2',
+    //  3 => '3',
+    //  4 => '4',
+    //  5 => '5',
+    //  6 => '6',
+    //  7 => '7',
+    //  8 => '8',
+    //  9 => '9',
+    //  _ => panic!("what"),
+    //}
 
-    // match (
-    //   cat(neighbors.0),
-    //   cat(neighbors.1),
-    //   cat(neighbors.2),
-    //   cat(neighbors.3),
-    // ) {
-    //   (Cat::L, Cat::L, Cat::L, Cat::L) | (Cat::H, Cat::H, Cat::H, Cat::H) => '.',
-    //   (Cat::H, Cat::L, Cat::L, Cat::L) => '-',
-    //   (Cat::L, Cat::H, Cat::L, Cat::L) => '\'',
-    //   (Cat::L, Cat::L, Cat::H, Cat::L) => '-',
-    //   (Cat::L, Cat::L, Cat::L, Cat::H) => '.',
-    //   (Cat::L, Cat::H, Cat::L, Cat::H) => '|',
-    //   (Cat::H, Cat::L, Cat::H, Cat::L) => '-',
-    //   (Cat::H, Cat::H, Cat::L, Cat::L) | (Cat::L, Cat::L, Cat::H, Cat::H) => '/',
-    //   (Cat::H, Cat::L, Cat::L, Cat::H) | (Cat::L, Cat::H, Cat::H, Cat::L) => '\\',
-    //   (Cat::L, Cat::H, Cat::H, Cat::H) => '|',
-    //   (Cat::H, Cat::L, Cat::H, Cat::H) => '-',
-    //   (Cat::H, Cat::H, Cat::L, Cat::H) => '|',
-    //   (Cat::H, Cat::H, Cat::H, Cat::L) => '-',
-    // }
+    enum Cat {
+      H,
+      L,
+    }
+    let cat = |particle: Particle| {
+      if particle.pos > self.pos + 0.02 {
+        Cat::H
+      } else {
+        Cat::L
+      }
+    };
+
+    let shape = match (
+      cat(neighbors.0),
+      cat(neighbors.1),
+      cat(neighbors.2),
+      cat(neighbors.3),
+    ) {
+      (Cat::L, Cat::L, Cat::L, Cat::L) | (Cat::H, Cat::H, Cat::H, Cat::H) => '.',
+      (Cat::H, Cat::L, Cat::L, Cat::L) => '-',
+      (Cat::L, Cat::H, Cat::L, Cat::L) => '\'',
+      (Cat::L, Cat::L, Cat::H, Cat::L) => '-',
+      (Cat::L, Cat::L, Cat::L, Cat::H) => '.',
+      (Cat::L, Cat::H, Cat::L, Cat::H) => '|',
+      (Cat::H, Cat::L, Cat::H, Cat::L) => '-',
+      (Cat::H, Cat::H, Cat::L, Cat::L) | (Cat::L, Cat::L, Cat::H, Cat::H) => '/',
+      (Cat::H, Cat::L, Cat::L, Cat::H) | (Cat::L, Cat::H, Cat::H, Cat::L) => '\\',
+      (Cat::L, Cat::H, Cat::H, Cat::H) => '|',
+      (Cat::H, Cat::L, Cat::H, Cat::H) => '-',
+      (Cat::H, Cat::H, Cat::L, Cat::H) => '|',
+      (Cat::H, Cat::H, Cat::H, Cat::L) => '-',
+    };
+
+    let color = color::Fg(color::Rgb(
+      ((self.pos.clamp(0.5, 1.) - 0.5) * 182. + 62.) as u8,
+      ((self.pos.clamp(0.5, 1.) - 0.5) * 56. + 164.) as u8,
+      ((self.pos.clamp(0.5, 1.) - 0.5) * -26. + 240.) as u8,
+    ));
+
+    (shape, format!("{}", color))
   }
 }
 
@@ -172,21 +181,13 @@ impl<W: Write> Window<W> {
     for y in 0..self.height as i32 / SCALE {
       for x in 0..self.width as i32 / SCALE {
         let particle = bigs[self.big_idx(x, y)];
-        write!(
-          self.stdout,
-          "{}{}",
-          color::Fg(color::Rgb(
-            (particle.pos * 256.).clamp(0., 255.) as u8,
-            ((1. - particle.pos) * 256.).clamp(0., 255.) as u8,
-            128
-          )),
-          particle.shape((
-            bigs[self.big_idx(x - 1, y)],
-            bigs[self.big_idx(x, y - 1)],
-            bigs[self.big_idx(x + 1, y)],
-            bigs[self.big_idx(x, y + 1)],
-          ))
-        )?;
+        let (shape, color) = particle.shape((
+          bigs[self.big_idx(x - 1, y)],
+          bigs[self.big_idx(x, y - 1)],
+          bigs[self.big_idx(x + 1, y)],
+          bigs[self.big_idx(x, y + 1)],
+        ));
+        write!(self.stdout, "{}{}", color, shape)?;
       }
       write!(
         self.stdout,
