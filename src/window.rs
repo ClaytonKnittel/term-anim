@@ -11,16 +11,51 @@ pub struct Particle {
 
 impl Particle {
   fn new() -> Self {
-    Self { pos: 0., vel: 0. }
+    Self { pos: 0.5, vel: 0. }
   }
 
   /// Left, Up, Right, Down
   fn perturb(&self, neighbors: (Particle, Particle, Particle, Particle)) -> Self {
     let ddx = neighbors.2.pos + neighbors.0.pos - 2. * self.pos;
     let ddy = neighbors.3.pos + neighbors.1.pos - 2. * self.pos;
-    let vel = self.vel + (C * C) * (ddx + ddy);
+    let vel = 0.998 * self.vel + (C * C) * (ddx + ddy) + 0.8 * (C * C) * (0.5 - self.pos);
     let pos = self.pos + C * self.vel;
     Self { pos, vel }
+  }
+
+  fn shape(&self, neighbors: (Particle, Particle, Particle, Particle)) -> char {
+    enum Cat {
+      H,
+      L,
+    }
+    let cat = |particle: Particle| {
+      if particle.pos > 0.6 {
+        Cat::H
+      } else {
+        Cat::L
+      }
+    };
+
+    match (
+      cat(neighbors.0),
+      cat(neighbors.1),
+      cat(neighbors.2),
+      cat(neighbors.3),
+    ) {
+      (Cat::L, Cat::L, Cat::L, Cat::L) | (Cat::H, Cat::H, Cat::H, Cat::H) => '.',
+      (Cat::H, Cat::L, Cat::L, Cat::L) => '-',
+      (Cat::L, Cat::H, Cat::L, Cat::L) => '\'',
+      (Cat::L, Cat::L, Cat::H, Cat::L) => '-',
+      (Cat::L, Cat::L, Cat::L, Cat::H) => '.',
+      (Cat::L, Cat::H, Cat::L, Cat::H) => '|',
+      (Cat::H, Cat::L, Cat::H, Cat::L) => '-',
+      (Cat::H, Cat::H, Cat::L, Cat::L) | (Cat::L, Cat::L, Cat::H, Cat::H) => '/',
+      (Cat::H, Cat::L, Cat::L, Cat::H) | (Cat::L, Cat::H, Cat::H, Cat::L) => '\\',
+      (Cat::L, Cat::H, Cat::H, Cat::H) => '|',
+      (Cat::H, Cat::L, Cat::H, Cat::H) => '-',
+      (Cat::H, Cat::H, Cat::L, Cat::H) => '|',
+      (Cat::H, Cat::H, Cat::H, Cat::L) => '-',
+    }
   }
 }
 
@@ -35,9 +70,9 @@ impl<W: Write> Window<W> {
   pub fn new(stdout: W, width: u32, height: u32) -> Self {
     let mut s = Self {
       stdout,
-      width,
-      height,
-      grid: vec![Particle::new(); (width * height) as usize],
+      width: 4 * width,
+      height: 4 * height,
+      grid: vec![Particle::new(); (16 * width * height) as usize],
     };
     s.allocate().expect("Failed to initialize window");
     s
@@ -47,10 +82,20 @@ impl<W: Write> Window<W> {
     &mut self.stdout
   }
 
-  pub fn get(&self, x: i32, y: i32) -> Particle {
+  fn idx(&self, x: i32, y: i32) -> usize {
     let x = x.clamp(0, self.width as i32 - 1) as u32;
     let y = y.clamp(0, self.height as i32 - 1) as u32;
-    self.grid[(x + y * self.width) as usize]
+    (x + y * self.width) as usize
+  }
+
+  fn big_idx(&self, x: i32, y: i32) -> usize {
+    let x = x.clamp(0, self.width as i32 / 4 - 1) as u32;
+    let y = y.clamp(0, self.height as i32 / 4 - 1) as u32;
+    (x + y * self.width / 4) as usize
+  }
+
+  pub fn get(&self, x: i32, y: i32) -> Particle {
+    self.grid[self.idx(x, y)]
   }
 
   pub fn get_mut(&mut self, x: u32, y: u32) -> &mut Particle {
@@ -59,9 +104,28 @@ impl<W: Write> Window<W> {
     &mut self.grid[(x + y * self.width) as usize]
   }
 
+  pub fn get_big(&self, x: i32, y: i32) -> Particle {
+    let x = x.clamp(0, self.width as i32 / 4 - 1);
+    let y = y.clamp(0, self.height as i32 / 4 - 1);
+    let pos: f32 = (0..4)
+      .flat_map(|dy| (0..4).map(move |dx| self.get(4 * x + dx, 4 * y + dy).pos))
+      .sum();
+    let vel: f32 = (0..4)
+      .flat_map(|dy| (0..4).map(move |dx| self.get(4 * x + dx, 4 * y + dy).vel))
+      .sum();
+    Particle {
+      pos: pos / 16.,
+      vel: vel / 16.,
+    }
+  }
+
   pub fn click(&mut self, x: u32, y: u32) {
-    if 1 <= x && x <= self.width && 1 <= y && y <= self.height {
-      self.get_mut(x - 1, y - 1).pos = 1.;
+    if 1 <= x && x <= self.width / 4 && 1 <= y && y <= self.height / 4 {
+      for dy in 0..4 {
+        for dx in 0..4 {
+          self.get_mut(4 * (x - 1) + dx, 4 * (y - 1) + dy).pos = 1.;
+        }
+      }
     }
   }
 
@@ -85,16 +149,26 @@ impl<W: Write> Window<W> {
 
   pub fn render(&mut self) -> std::io::Result<()> {
     write!(self.stdout, "{}", cursor::Up(self.height as u16))?;
-    for y in 0..self.height {
-      for x in 0..self.width {
-        let particle = self.get(x as i32, y as i32);
+    let bigs: Vec<_> = (0..self.height as i32 / 4)
+      .flat_map(|y| (0..self.width as i32 / 4).map(move |x| (x, y)))
+      .map(|(x, y)| self.get_big(x, y))
+      .collect();
+    for y in 0..self.height as i32 / 4 {
+      for x in 0..self.width as i32 / 4 {
+        let particle = bigs[self.big_idx(x, y)];
         write!(
           self.stdout,
-          "{}O",
+          "{}{}",
           color::Fg(color::Rgb(
-            (particle.pos * 128.).clamp(0., 128.) as u8,
-            ((1. - particle.pos) * 128.).clamp(0., 128.) as u8,
+            (particle.pos * 256.).clamp(0., 255.) as u8,
+            ((1. - particle.pos) * 256.).clamp(0., 255.) as u8,
             128
+          )),
+          particle.shape((
+            bigs[self.big_idx(x - 1, y)],
+            bigs[self.big_idx(x, y - 1)],
+            bigs[self.big_idx(x + 1, y)],
+            bigs[self.big_idx(x, y + 1)],
           ))
         )?;
       }

@@ -29,7 +29,9 @@ fn main() {
       }
     }
     std::thread::sleep(std::time::Duration::from_millis(20));
-    window.advance();
+    for _ in 0..10 {
+      window.advance();
+    }
     window.render().unwrap();
   }
 }
