@@ -1,11 +1,11 @@
-mod entity;
+mod bunny;
 mod util;
 mod water;
 mod window;
 
 use std::time::SystemTime;
 
-use entity::Bunny;
+use bunny::Bunny;
 use termion::async_stdin;
 use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};

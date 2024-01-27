@@ -25,12 +25,16 @@ impl Bunny {
   }
 
   pub fn shift(&mut self) {
-    self.pos.0 += 1;
-    self.state = match self.state {
-      BunnyState::Wake => BunnyState::Wake,
-      BunnyState::Sleep => BunnyState::Sleep,
-      BunnyState::Walk1 => BunnyState::Walk2,
-      BunnyState::Walk2 => BunnyState::Walk1,
+    match self.state {
+      BunnyState::Wake => {}
+      BunnyState::Sleep => {}
+      BunnyState::Walk1 => {
+        self.state = BunnyState::Walk2;
+        self.pos.0 += 1;
+      }
+      BunnyState::Walk2 => {
+        self.state = BunnyState::Walk1;
+      }
     };
   }
 
