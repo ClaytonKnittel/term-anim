@@ -2,5 +2,6 @@
   "rust-analyzer.linkedProjects": [
     "./Cargo.toml"
   ],
-  "inlayHint.enable": false
+  "inlayHint.enable": false,
+  "rust-analyzer.check.command": "clippy"
 }

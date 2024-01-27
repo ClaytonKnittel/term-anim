@@ -1,12 +1,17 @@
+mod entity;
+mod util;
+mod water;
 mod window;
 
 use std::time::SystemTime;
 
+use entity::Bunny;
 use termion::async_stdin;
 use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
+use water::Water;
 
 fn main() {
   let stdout = HideCursor::from(MouseTerminal::from(
@@ -21,14 +26,17 @@ fn main() {
     .build()
     .unwrap();
 
-  'outer: loop {
+  let mut bunny = Bunny::new();
+  let mut water = Water::new(window.width(), window.height());
+
+  'outer: for t in 0usize.. {
     let start = SystemTime::now();
-    while let Some(evt) = stdin.next() {
+    for evt in stdin.by_ref() {
       match evt {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
         Ok(Event::Mouse(me)) => match me {
           MouseEvent::Press(_, x, y) | MouseEvent::Hold(x, y) => {
-            window.click(x as u32, y as u32);
+            water.click(x as u32, y as u32);
           }
           _ => (),
         },
@@ -37,8 +45,14 @@ fn main() {
       }
     }
     for _ in 0..7 {
-      window.advance();
+      water.advance();
     }
+    window.reset();
+    if t % 16 == 0 {
+      bunny.shift();
+    }
+    water.render(&mut window);
+    bunny.render(&mut window);
     window.render().expect("Failed 2 render");
     let end = SystemTime::now();
 
