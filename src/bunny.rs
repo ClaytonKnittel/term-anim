@@ -2,7 +2,7 @@ use std::io::Write;
 
 use termion::color;
 
-use crate::{util::Draw, window::Window};
+use crate::{entity::Entity, util::Draw, window::Window};
 
 enum BunnyState {
   Sleep,
@@ -71,12 +71,6 @@ impl Bunny {
       })
       .flatten()
   }
-
-  pub fn render<W: Write>(&self, window: &mut Window<W>) {
-    self
-      .iterate_tiles(window.width(), window.height())
-      .for_each(|(draw, pos)| window.draw(draw, pos))
-  }
 }
 
 #[rustfmt::skip]
@@ -108,3 +102,11 @@ const BUNNY4: [&str; 4] = [
   r#" (>_<)"#,
   r#"(") (")"#,
 ];
+
+impl Entity for Bunny {
+  fn render<W: Write>(&self, window: &mut Window<W>) {
+    self
+      .iterate_tiles(window.width(), window.height())
+      .for_each(|(draw, pos)| window.draw(draw, pos))
+  }
+}

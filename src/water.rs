@@ -1,7 +1,7 @@
 use std::io::Write;
-use termion::{color, cursor};
+use termion::color;
 
-use crate::{util::Draw, window::Window};
+use crate::{entity::Entity, util::Draw, window::Window};
 
 const C: f32 = 0.02;
 const SCALE: i32 = 2;
@@ -169,8 +169,10 @@ impl Water {
       })
       .collect();
   }
+}
 
-  pub fn render<W: Write>(&mut self, window: &mut Window<W>) {
+impl Entity for Water {
+  fn render<W: Write>(&self, window: &mut Window<W>) {
     let bigs: Vec<_> = (0..self.height as i32 / SCALE)
       .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))
       .map(|(x, y)| self.get_big(x, y))
