@@ -1,5 +1,6 @@
 mod bunny;
 mod entity;
+mod scene;
 mod util;
 mod water;
 mod window;
@@ -8,6 +9,7 @@ use std::time::SystemTime;
 
 use bunny::Bunny;
 use entity::Entity;
+use scene::Scene;
 use termion::async_stdin;
 use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
@@ -31,6 +33,10 @@ fn main() {
   let mut bunny = Bunny::new();
   let mut water = Water::new(window.width(), window.height());
 
+  let mut scene = Scene::new();
+  scene.add_entity(bunny);
+  scene.add_entity(water);
+
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
     for evt in stdin.by_ref() {
@@ -38,7 +44,7 @@ fn main() {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
         Ok(Event::Mouse(me)) => match me {
           MouseEvent::Press(_, x, y) | MouseEvent::Hold(x, y) => {
-            water.click(x as u32, y as u32);
+            scene.click(x as u32, y as u32);
           }
           _ => (),
         },
@@ -46,15 +52,9 @@ fn main() {
         _ => {}
       }
     }
-    for _ in 0..7 {
-      water.advance();
-    }
     window.reset();
-    if t % 16 == 0 {
-      bunny.shift();
-    }
-    water.render(&mut window);
-    bunny.render(&mut window);
+    scene.tick(t);
+    scene.render(&mut window);
     window.render().expect("Failed 2 render");
     let end = SystemTime::now();
 

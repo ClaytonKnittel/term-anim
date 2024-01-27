@@ -90,6 +90,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "context-iterators"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07ec5b69614ae4dbce88efe2684f4526e3a5aeb0a68326d1424f69c98f3040d2"
+
+[[package]]
 name = "cpp_demangle"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -515,6 +521,7 @@ dependencies = [
 name = "term-anim"
 version = "0.1.0"
 dependencies = [
+ "context-iterators",
  "pprof",
  "termion",
 ]

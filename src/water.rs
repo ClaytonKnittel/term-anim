@@ -1,7 +1,8 @@
-use std::io::Write;
+use std::iter;
+
 use termion::color;
 
-use crate::{entity::Entity, util::Draw, window::Window};
+use crate::{entity::Entity, util::Draw};
 
 const C: f32 = 0.02;
 const SCALE: i32 = 2;
@@ -113,10 +114,14 @@ impl Water {
     (x + y * self.width) as usize
   }
 
+  fn big_idx_wh(x: i32, y: i32, width: u32, height: u32) -> usize {
+    let x = x.clamp(0, width as i32 / SCALE - 1) as u32;
+    let y = y.clamp(0, height as i32 / SCALE - 1) as u32;
+    (x + y * width / SCALE as u32) as usize
+  }
+
   fn big_idx(&self, x: i32, y: i32) -> usize {
-    let x = x.clamp(0, self.width as i32 / SCALE - 1) as u32;
-    let y = y.clamp(0, self.height as i32 / SCALE - 1) as u32;
-    (x + y * self.width / SCALE as u32) as usize
+    Self::big_idx_wh(x, y, self.width, self.height)
   }
 
   pub fn get(&self, x: i32, y: i32) -> Particle {
@@ -144,18 +149,6 @@ impl Water {
     }
   }
 
-  pub fn click(&mut self, x: u32, y: u32) {
-    if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
-      for dy in 0..SCALE as u32 {
-        for dx in 0..SCALE as u32 {
-          self
-            .get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy)
-            .pos = 1.;
-        }
-      }
-    }
-  }
-
   pub fn advance(&mut self) {
     self.grid = (0..self.height as i32)
       .flat_map(|y| (0..self.width as i32).map(move |x| (x, y)))
@@ -172,21 +165,43 @@ impl Water {
 }
 
 impl Entity for Water {
-  fn render<W: Write>(&self, window: &mut Window<W>) {
+  fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     let bigs: Vec<_> = (0..self.height as i32 / SCALE)
       .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))
       .map(|(x, y)| self.get_big(x, y))
       .collect();
-    for y in 0..self.height as i32 / SCALE {
-      for x in 0..self.width as i32 / SCALE {
-        let particle = bigs[self.big_idx(x, y)];
-        let shape = particle.shape((
-          bigs[self.big_idx(x - 1, y)],
-          bigs[self.big_idx(x, y - 1)],
-          bigs[self.big_idx(x + 1, y)],
-          bigs[self.big_idx(x, y + 1)],
-        ));
-        window.draw(shape, (x as u32, y as u32));
+    Box::new(
+      (0..self.height as i32 / SCALE)
+        .zip(iter::repeat((self, bigs)))
+        .flat_map(|(y, (water, bigs))| {
+          (0..self.width as i32 / SCALE).map(move |x| {
+            let particle = bigs[water.big_idx(x, y)];
+            let shape = particle.shape((
+              bigs[water.big_idx(x - 1, y)],
+              bigs[water.big_idx(x, y - 1)],
+              bigs[water.big_idx(x + 1, y)],
+              bigs[water.big_idx(x, y + 1)],
+            ));
+            (shape, (x, y))
+          })
+        }),
+    )
+  }
+
+  fn tick(&mut self, t: usize) {
+    for _ in 0..7 {
+      self.advance();
+    }
+  }
+
+  fn click(&mut self, x: u32, y: u32) {
+    if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
+      for dy in 0..SCALE as u32 {
+        for dx in 0..SCALE as u32 {
+          self
+            .get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy)
+            .pos = 1.;
+        }
       }
     }
   }

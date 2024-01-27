@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+context-iterators = "0.2.0"
 pprof = { version = "0.13.0", features = ["flamegraph"] }
 termion = "3.0.0"
