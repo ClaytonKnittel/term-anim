@@ -44,7 +44,7 @@ impl Particle {
       L,
     }
     let cat = |particle: Particle| {
-      if particle.pos > self.pos + 0.02 {
+      if particle.pos > self.pos + 0.009 {
         Cat::H
       } else {
         Cat::L
@@ -72,11 +72,11 @@ impl Particle {
       (Cat::H, Cat::H, Cat::H, Cat::L) => '-',
     };
 
-    let color = color::Fg(color::Rgb(
-      ((self.pos.clamp(0.5, 1.) - 0.5) * 182. + 62.) as u8,
-      ((self.pos.clamp(0.5, 1.) - 0.5) * 56. + 164.) as u8,
-      ((self.pos.clamp(0.5, 1.) - 0.5) * -26. + 240.) as u8,
-    ));
+    let color = if self.pos > 0.507 {
+      color::Fg(color::AnsiValue::grayscale(22))
+    } else {
+      color::Fg(color::AnsiValue::rgb(0, 2, 5))
+    };
 
     (shape, format!("{}", color))
   }
