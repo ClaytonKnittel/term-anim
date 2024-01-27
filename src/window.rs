@@ -1,5 +1,5 @@
 use std::io::Write;
-use termion::{clear, cursor};
+use termion::cursor;
 
 use crate::util::Draw;
 
@@ -28,10 +28,6 @@ impl<W: Write> Window<W> {
 
   pub fn height(&self) -> u32 {
     self.height
-  }
-
-  pub fn stdout(&mut self) -> &mut W {
-    &mut self.stdout
   }
 
   fn idx(&self, x: u32, y: u32) -> usize {

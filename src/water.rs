@@ -100,14 +100,6 @@ impl Water {
     }
   }
 
-  pub fn width(&self) -> u32 {
-    self.width
-  }
-
-  pub fn height(&self) -> u32 {
-    self.height
-  }
-
   fn idx(&self, x: i32, y: i32) -> usize {
     let x = x.clamp(0, self.width as i32 - 1) as u32;
     let y = y.clamp(0, self.height as i32 - 1) as u32;
@@ -188,7 +180,7 @@ impl Entity for Water {
     )
   }
 
-  fn tick(&mut self, t: usize) {
+  fn tick(&mut self, _t: usize) {
     for _ in 0..7 {
       self.advance();
     }

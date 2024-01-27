@@ -1,8 +1,6 @@
-use std::io::Write;
-
 use termion::color;
 
-use crate::{entity::Entity, util::Draw, window::Window};
+use crate::{entity::Entity, util::Draw};
 
 enum BunnyState {
   Sleep,
@@ -103,5 +101,5 @@ impl Entity for Bunny {
     }
   }
 
-  fn click(&mut self, x: u32, y: u32) {}
+  fn click(&mut self, _x: u32, _y: u32) {}
 }

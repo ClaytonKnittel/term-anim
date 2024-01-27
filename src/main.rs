@@ -30,8 +30,8 @@ fn main() {
     .build()
     .unwrap();
 
-  let mut bunny = Bunny::new();
-  let mut water = Water::new(window.width(), window.height());
+  let bunny = Bunny::new();
+  let water = Water::new(window.width(), window.height());
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
