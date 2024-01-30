@@ -3,6 +3,8 @@ mod entity;
 mod grass;
 mod landscape;
 mod scene;
+mod track;
+mod train;
 mod util;
 mod water;
 mod window;
@@ -19,6 +21,8 @@ use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
+use track::Track;
+use train::Train;
 
 fn main() {
   let stdout = HideCursor::from(MouseTerminal::from(
@@ -37,10 +41,14 @@ fn main() {
 
   let bunny = Bunny::new();
   let landscape = Landscape::new(window.width(), window.height(), &mut r);
+  let track = Track::new(window.height() * 5 / 8, window.width());
+  let train = Train::new(5, window.width() as i32, window.height() * 5 / 8 - 2);
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
   scene.add_entity(landscape);
+  scene.add_entity(track);
+  scene.add_entity(train);
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
