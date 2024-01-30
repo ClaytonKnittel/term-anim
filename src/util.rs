@@ -20,6 +20,10 @@ impl Draw {
     }
   }
 
+  pub fn item(&self) -> char {
+    self.item
+  }
+
   pub fn with_fg(self, color: color::AnsiValue) -> Self {
     Self {
       fg_color: Some(color),
