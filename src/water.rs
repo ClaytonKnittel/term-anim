@@ -6,6 +6,7 @@ use crate::{entity::Entity, util::Draw};
 
 const C: f32 = 0.02;
 const SCALE: i32 = 2;
+const Z_IDX: i32 = 1;
 
 #[derive(Clone, Copy)]
 pub struct Particle {
@@ -85,10 +86,16 @@ impl Particle {
   }
 }
 
+#[derive(Clone, Copy)]
+pub enum ParticleType {
+  Normal(Particle),
+  Fixed,
+}
+
 pub struct Water {
   width: u32,
   height: u32,
-  grid: Vec<Particle>,
+  grid: Vec<ParticleType>,
 }
 
 impl Water {
@@ -96,7 +103,10 @@ impl Water {
     Self {
       width: SCALE as u32 * width,
       height: SCALE as u32 * height,
-      grid: vec![Particle::new(); ((SCALE * SCALE) as u32 * width * height) as usize],
+      grid: vec![
+        ParticleType::Normal(Particle::new());
+        ((SCALE * SCALE) as u32 * width * height) as usize
+      ],
     }
   }
 
@@ -116,11 +126,18 @@ impl Water {
     Self::big_idx_wh(x, y, self.width, self.height)
   }
 
-  pub fn get(&self, x: i32, y: i32) -> Particle {
+  pub fn get(&self, x: i32, y: i32) -> ParticleType {
     self.grid[self.idx(x, y)]
   }
 
-  pub fn get_mut(&mut self, x: u32, y: u32) -> &mut Particle {
+  pub fn get_particle(&self, x: i32, y: i32) -> Particle {
+    match self.get(x, y) {
+      ParticleType::Normal(particle) => particle,
+      ParticleType::Fixed => Particle { pos: 0.5, vel: 0. },
+    }
+  }
+
+  pub fn get_mut(&mut self, x: u32, y: u32) -> &mut ParticleType {
     debug_assert!(x < self.width);
     debug_assert!(y < self.height);
     &mut self.grid[(x + y * self.width) as usize]
@@ -130,10 +147,14 @@ impl Water {
     let x = x.clamp(0, self.width as i32 / SCALE - 1);
     let y = y.clamp(0, self.height as i32 / SCALE - 1);
     let pos: f32 = (0..SCALE)
-      .flat_map(|dy| (0..SCALE).map(move |dx| self.get(SCALE * x + dx, SCALE * y + dy).pos))
+      .flat_map(|dy| {
+        (0..SCALE).map(move |dx| self.get_particle(SCALE * x + dx, SCALE * y + dy).pos)
+      })
       .sum();
     let vel: f32 = (0..SCALE)
-      .flat_map(|dy| (0..SCALE).map(move |dx| self.get(SCALE * x + dx, SCALE * y + dy).vel))
+      .flat_map(|dy| {
+        (0..SCALE).map(move |dx| self.get_particle(SCALE * x + dx, SCALE * y + dy).vel)
+      })
       .sum();
     Particle {
       pos: pos / (SCALE * SCALE) as f32,
@@ -141,16 +162,25 @@ impl Water {
     }
   }
 
+  pub fn big_fix(&mut self, x: u32, y: u32) {
+    for dy in 0..SCALE as u32 {
+      for dx in 0..SCALE as u32 {
+        *self.get_mut(SCALE as u32 * x + dx, SCALE as u32 * y + dy) = ParticleType::Fixed;
+      }
+    }
+  }
+
   pub fn advance(&mut self) {
     self.grid = (0..self.height as i32)
       .flat_map(|y| (0..self.width as i32).map(move |x| (x, y)))
-      .map(|(x, y)| {
-        self.get(x, y).perturb((
-          self.get(x - 1, y),
-          self.get(x, y - 1),
-          self.get(x + 1, y),
-          self.get(x, y + 1),
-        ))
+      .map(|(x, y)| match self.get(x, y) {
+        ParticleType::Normal(particle) => ParticleType::Normal(particle.perturb((
+          self.get_particle(x - 1, y),
+          self.get_particle(x, y - 1),
+          self.get_particle(x + 1, y),
+          self.get_particle(x, y + 1),
+        ))),
+        ParticleType::Fixed => ParticleType::Fixed,
       })
       .collect();
   }
@@ -158,6 +188,7 @@ impl Water {
 
 impl Entity for Water {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
+    // TODO: Think this may be copied for every row...
     let bigs: Vec<_> = (0..self.height as i32 / SCALE)
       .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))
       .map(|(x, y)| self.get_big(x, y))
@@ -174,7 +205,7 @@ impl Entity for Water {
               bigs[water.big_idx(x + 1, y)],
               bigs[water.big_idx(x, y + 1)],
             ));
-            (shape, (x, y))
+            (shape.with_z(Z_IDX), (x, y))
           })
         }),
     )
@@ -190,9 +221,10 @@ impl Entity for Water {
     if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
       for dy in 0..SCALE as u32 {
         for dx in 0..SCALE as u32 {
-          self
-            .get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy)
-            .pos = 1.;
+          match self.get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy) {
+            ParticleType::Normal(particle) => particle.pos = 1.,
+            ParticleType::Fixed => {}
+          }
         }
       }
     }

@@ -1,5 +1,7 @@
 mod bunny;
 mod entity;
+mod grass;
+mod landscape;
 mod scene;
 mod util;
 mod water;
@@ -9,13 +11,14 @@ use std::time::SystemTime;
 
 use bunny::Bunny;
 use entity::Entity;
+use landscape::Landscape;
+use rand::{rngs, SeedableRng};
 use scene::Scene;
 use termion::async_stdin;
 use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
-use water::Water;
 
 fn main() {
   let stdout = HideCursor::from(MouseTerminal::from(
@@ -24,18 +27,20 @@ fn main() {
   let mut window = window::Window::new(stdout, 120, 40);
   let mut stdin = async_stdin().events();
 
-  let guard = pprof::ProfilerGuardBuilder::default()
-    .frequency(1000)
-    .blocklist(&["libc", "libgcc", "pthread", "vdso"])
-    .build()
-    .unwrap();
+  //let guard = pprof::ProfilerGuardBuilder::default()
+  //  .frequency(1000)
+  //  .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+  //  .build()
+  //  .unwrap();
+
+  let mut r = rngs::StdRng::seed_from_u64(27418995609531717u64);
 
   let bunny = Bunny::new();
-  let water = Water::new(window.width(), window.height());
+  let landscape = Landscape::new(window.width(), window.height(), &mut r);
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
-  scene.add_entity(water);
+  scene.add_entity(landscape);
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
@@ -63,8 +68,8 @@ fn main() {
     std::thread::sleep(sleep_duration);
   }
 
-  if let Ok(report) = guard.report().build() {
-    let file = std::fs::File::create("prof.svg").unwrap();
-    report.flamegraph(file).unwrap();
-  };
+  //if let Ok(report) = guard.report().build() {
+  //  let file = std::fs::File::create("prof.svg").unwrap();
+  //  report.flamegraph(file).unwrap();
+  //};
 }

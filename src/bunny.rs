@@ -2,6 +2,8 @@ use termion::color;
 
 use crate::{entity::Entity, util::Draw};
 
+const Z_IDX: i32 = 10;
+
 enum BunnyState {
   Sleep,
   Wake,
@@ -88,7 +90,7 @@ impl Entity for Bunny {
         Some((
           Draw::new(c)
             .with_fg(color::AnsiValue::grayscale(22))
-            .with_z(1),
+            .with_z(Z_IDX),
           (x, y),
         ))
       })
