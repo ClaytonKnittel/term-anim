@@ -73,4 +73,6 @@ impl Entity for Grass {
   fn tick(&mut self, t: usize) {}
 
   fn click(&mut self, x: u32, y: u32) {}
+  fn drag(&mut self, dx: i32, dy: i32) {}
+  fn release(&mut self, x: u32, y: u32) {}
 }

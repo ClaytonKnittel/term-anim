@@ -96,6 +96,7 @@ pub struct Water {
   width: u32,
   height: u32,
   grid: Vec<ParticleType>,
+  last_mouse: (i32, i32),
 }
 
 impl Water {
@@ -107,6 +108,7 @@ impl Water {
         ParticleType::Normal(Particle::new());
         ((SCALE * SCALE) as u32 * width * height) as usize
       ],
+      last_mouse: (-1, -1),
     }
   }
 
@@ -184,6 +186,22 @@ impl Water {
       })
       .collect();
   }
+
+  fn click_tile(&mut self, x: i32, y: i32) {
+    if 1 <= x && x <= self.width as i32 / SCALE && 1 <= y && y <= self.height as i32 / SCALE {
+      for dy in 0..SCALE as u32 {
+        for dx in 0..SCALE as u32 {
+          match self.get_mut(
+            SCALE as u32 * (x as u32 - 1) + dx,
+            SCALE as u32 * (y as u32 - 1) + dy,
+          ) {
+            ParticleType::Normal(particle) => particle.pos = 1.,
+            ParticleType::Fixed => {}
+          }
+        }
+      }
+    }
+  }
 }
 
 impl Entity for Water {
@@ -219,15 +237,20 @@ impl Entity for Water {
   }
 
   fn click(&mut self, x: u32, y: u32) {
-    if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
-      for dy in 0..SCALE as u32 {
-        for dx in 0..SCALE as u32 {
-          match self.get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy) {
-            ParticleType::Normal(particle) => particle.pos = 1.,
-            ParticleType::Fixed => {}
-          }
-        }
-      }
-    }
+    let x = x as i32;
+    let y = y as i32;
+    self.click_tile(x, y);
+    self.last_mouse = (x, y);
+  }
+
+  fn drag(&mut self, dx: i32, dy: i32) {
+    let x = self.last_mouse.0 + dx;
+    let y = self.last_mouse.1 + dy;
+    self.click_tile(x, y);
+    self.last_mouse = (x, y);
+  }
+
+  fn release(&mut self, _x: u32, _y: u32) {
+    self.last_mouse = (-1, -1);
   }
 }

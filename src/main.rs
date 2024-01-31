@@ -6,6 +6,7 @@ mod peach;
 mod scene;
 mod track;
 mod train;
+mod train_scene;
 mod util;
 mod water;
 mod window;
@@ -25,6 +26,7 @@ use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
 use track::Track;
 use train::Train;
+use train_scene::TrainScene;
 
 fn main() {
   let stdout = HideCursor::from(MouseTerminal::from(
@@ -43,16 +45,15 @@ fn main() {
 
   let bunny = Bunny::new();
   let landscape = Landscape::new(window.width(), window.height(), &mut r);
-  let track = Track::new(window.height() * 5 / 8, window.width());
-  let train = Train::new(5, window.width() as i32, window.height() * 5 / 8 - 2);
-  let peach = Peach::new(30, 10);
+  let train_scene = TrainScene::new(window.width(), window.height());
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
   scene.add_entity(landscape);
-  scene.add_entity(track);
-  scene.add_entity(train);
-  scene.add_entity(peach);
+  scene.add_entity(train_scene);
+
+  let mut last_x = -1;
+  let mut last_y = -1;
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
@@ -60,8 +61,26 @@ fn main() {
       match evt {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
         Ok(Event::Mouse(me)) => match me {
-          MouseEvent::Press(_, x, y) | MouseEvent::Hold(x, y) => {
+          MouseEvent::Press(_, x, y) => {
+            last_x = x as i32;
+            last_y = y as i32;
             scene.click(x as u32, y as u32);
+          }
+          MouseEvent::Hold(x, y) => {
+            debug_assert_ne!(last_x, -1);
+            debug_assert_ne!(last_y, -1);
+            let x = x as i32;
+            let y = y as i32;
+            let dx = x - last_x;
+            let dy = y - last_y;
+            scene.drag(dx, dy);
+            last_x = x;
+            last_y = y;
+          }
+          MouseEvent::Release(x, y) => {
+            scene.release(x as u32, y as u32);
+            last_x = -1;
+            last_y = -1;
           }
           _ => (),
         },

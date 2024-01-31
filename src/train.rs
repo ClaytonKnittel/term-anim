@@ -30,11 +30,21 @@ pub struct Train {
   len: u32,
   y: u32,
   x: i32,
+  orig_x: i32,
 }
 
 impl Train {
   pub fn new(len: u32, x: i32, y: u32) -> Self {
-    Self { len, x, y }
+    Self {
+      len,
+      x,
+      y,
+      orig_x: x,
+    }
+  }
+
+  pub fn reset(&mut self) {
+    self.x = self.orig_x;
   }
 }
 
@@ -83,9 +93,18 @@ impl Entity for Train {
     }))
   }
 
-  fn tick(&mut self, t: usize) {
+  fn tick(&mut self, _t: usize) {
     self.x -= 2;
+
+    let engine_len = TRAIN_ENGINE[0].chars().count() as i32;
+    let cabin_len = TRAIN_CABIN[0].chars().count() as i32;
+    let caboose_len = TRAIN_CABOOSE[0].chars().count() as i32;
+    if engine_len + cabin_len * (self.len as i32 - 2) + caboose_len + self.x < -300 {
+      self.reset();
+    }
   }
 
-  fn click(&mut self, x: u32, y: u32) {}
+  fn click(&mut self, _x: u32, _y: u32) {}
+  fn drag(&mut self, dx: i32, dy: i32) {}
+  fn release(&mut self, x: u32, y: u32) {}
 }

@@ -104,4 +104,6 @@ impl Entity for Bunny {
   }
 
   fn click(&mut self, _x: u32, _y: u32) {}
+  fn drag(&mut self, dx: i32, dy: i32) {}
+  fn release(&mut self, x: u32, y: u32) {}
 }

@@ -44,4 +44,14 @@ impl Entity for Landscape {
     self.grass.click(x, y);
     self.water.click(x, y);
   }
+
+  fn drag(&mut self, dx: i32, dy: i32) {
+    self.grass.drag(dx, dy);
+    self.water.drag(dx, dy);
+  }
+
+  fn release(&mut self, x: u32, y: u32) {
+    self.grass.release(x, y);
+    self.water.release(x, y);
+  }
 }

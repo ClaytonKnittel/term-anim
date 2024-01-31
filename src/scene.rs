@@ -34,4 +34,18 @@ impl Entity for Scene {
       .iter_mut()
       .for_each(|entity| entity.click(x, y));
   }
+
+  fn drag(&mut self, dx: i32, dy: i32) {
+    self
+      .entities
+      .iter_mut()
+      .for_each(|entity| entity.drag(dx, dy));
+  }
+
+  fn release(&mut self, x: u32, y: u32) {
+    self
+      .entities
+      .iter_mut()
+      .for_each(|entity| entity.release(x, y));
+  }
 }
