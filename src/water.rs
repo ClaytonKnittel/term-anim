@@ -188,7 +188,6 @@ impl Water {
 
 impl Entity for Water {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
-    // TODO: Think this may be copied for every row...
     let bigs: Rc<Vec<_>> = Rc::new(
       (0..self.height as i32 / SCALE)
         .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))

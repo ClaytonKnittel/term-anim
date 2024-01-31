@@ -2,6 +2,7 @@ mod bunny;
 mod entity;
 mod grass;
 mod landscape;
+mod peach;
 mod scene;
 mod track;
 mod train;
@@ -14,6 +15,7 @@ use std::time::SystemTime;
 use bunny::Bunny;
 use entity::Entity;
 use landscape::Landscape;
+use peach::Peach;
 use rand::{rngs, SeedableRng};
 use scene::Scene;
 use termion::async_stdin;
@@ -43,12 +45,14 @@ fn main() {
   let landscape = Landscape::new(window.width(), window.height(), &mut r);
   let track = Track::new(window.height() * 5 / 8, window.width());
   let train = Train::new(5, window.width() as i32, window.height() * 5 / 8 - 2);
+  let peach = Peach::new(30, 10);
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
   scene.add_entity(landscape);
   scene.add_entity(track);
   scene.add_entity(train);
+  scene.add_entity(peach);
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
