@@ -187,14 +187,11 @@ impl Water {
       .collect();
   }
 
-  fn click_tile(&mut self, x: i32, y: i32) {
-    if 1 <= x && x <= self.width as i32 / SCALE && 1 <= y && y <= self.height as i32 / SCALE {
+  fn click_tile(&mut self, x: u32, y: u32) {
+    if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
       for dy in 0..SCALE as u32 {
         for dx in 0..SCALE as u32 {
-          match self.get_mut(
-            SCALE as u32 * (x as u32 - 1) + dx,
-            SCALE as u32 * (y as u32 - 1) + dy,
-          ) {
+          match self.get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy) {
             ParticleType::Normal(particle) => particle.pos = 1.,
             ParticleType::Fixed => {}
           }
@@ -237,17 +234,11 @@ impl Entity for Water {
   }
 
   fn click(&mut self, x: u32, y: u32) {
-    let x = x as i32;
-    let y = y as i32;
     self.click_tile(x, y);
-    self.last_mouse = (x, y);
   }
 
-  fn drag(&mut self, dx: i32, dy: i32) {
-    let x = self.last_mouse.0 + dx;
-    let y = self.last_mouse.1 + dy;
+  fn drag(&mut self, x: u32, y: u32) {
     self.click_tile(x, y);
-    self.last_mouse = (x, y);
   }
 
   fn release(&mut self, _x: u32, _y: u32) {

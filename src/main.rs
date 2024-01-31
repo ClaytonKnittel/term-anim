@@ -52,9 +52,6 @@ fn main() {
   scene.add_entity(landscape);
   scene.add_entity(train_scene);
 
-  let mut last_x = -1;
-  let mut last_y = -1;
-
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
     for evt in stdin.by_ref() {
@@ -62,25 +59,13 @@ fn main() {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
         Ok(Event::Mouse(me)) => match me {
           MouseEvent::Press(_, x, y) => {
-            last_x = x as i32;
-            last_y = y as i32;
             scene.click(x as u32, y as u32);
           }
           MouseEvent::Hold(x, y) => {
-            debug_assert_ne!(last_x, -1);
-            debug_assert_ne!(last_y, -1);
-            let x = x as i32;
-            let y = y as i32;
-            let dx = x - last_x;
-            let dy = y - last_y;
-            scene.drag(dx, dy);
-            last_x = x;
-            last_y = y;
+            scene.drag(x as u32, y as u32);
           }
           MouseEvent::Release(x, y) => {
             scene.release(x as u32, y as u32);
-            last_x = -1;
-            last_y = -1;
           }
           _ => (),
         },

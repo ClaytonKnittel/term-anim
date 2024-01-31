@@ -28,9 +28,9 @@ impl Entity for Track {
     }))
   }
 
-  fn tick(&mut self, t: usize) {}
-  fn drag(&mut self, dx: i32, dy: i32) {}
-  fn release(&mut self, x: u32, y: u32) {}
+  fn tick(&mut self, _t: usize) {}
 
-  fn click(&mut self, x: u32, y: u32) {}
+  fn click(&mut self, _x: u32, _y: u32) {}
+  fn drag(&mut self, _x: u32, _y: u32) {}
+  fn release(&mut self, _x: u32, _y: u32) {}
 }

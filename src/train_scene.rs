@@ -39,10 +39,10 @@ impl Entity for TrainScene {
     self.peach.click(x, y);
   }
 
-  fn drag(&mut self, dx: i32, dy: i32) {
-    self.track.drag(dx, dy);
-    self.train.drag(dx, dy);
-    self.peach.drag(dx, dy);
+  fn drag(&mut self, x: u32, y: u32) {
+    self.track.drag(x, y);
+    self.train.drag(x, y);
+    self.peach.drag(x, y);
   }
 
   fn release(&mut self, x: u32, y: u32) {

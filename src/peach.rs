@@ -10,14 +10,28 @@ const PEACH: [&str; 2] = [
   r#"(@"#,
 ];
 
+enum PeachState {
+  Idle,
+  /// (dx, dy) is the distance to the peach from where the mouse is held.
+  Held {
+    dx: i32,
+    dy: i32,
+  },
+}
+
 pub struct Peach {
   x: i32,
   y: i32,
+  state: PeachState,
 }
 
 impl Peach {
   pub fn new(x: i32, y: i32) -> Self {
-    Self { x, y }
+    Self {
+      x,
+      y,
+      state: PeachState::Idle,
+    }
   }
 }
 
@@ -50,7 +64,25 @@ impl Entity for Peach {
 
   fn tick(&mut self, t: usize) {}
 
-  fn click(&mut self, x: u32, y: u32) {}
-  fn drag(&mut self, dx: i32, dy: i32) {}
-  fn release(&mut self, x: u32, y: u32) {}
+  fn click(&mut self, x: u32, y: u32) {
+    let dx = self.x - x as i32;
+    let dy = self.y - y as i32;
+    if (-1..=2).contains(&dx) && (-1..=2).contains(&dy) && (dx != -1 || dy != -1) {
+      self.state = PeachState::Held { dx, dy };
+    }
+  }
+
+  fn drag(&mut self, x: u32, y: u32) {
+    match self.state {
+      PeachState::Held { dx, dy } => {
+        self.x = x as i32 + dx;
+        self.y = y as i32 + dy;
+      }
+      PeachState::Idle => {}
+    }
+  }
+
+  fn release(&mut self, _x: u32, _y: u32) {
+    self.state = PeachState::Idle;
+  }
 }
