@@ -197,7 +197,7 @@ impl Entity for Water {
     );
     Box::new(
       (0..self.height as i32 / SCALE)
-        .zip(iter::repeat((self, bigs.clone())))
+        .zip(iter::repeat((self, bigs)))
         .flat_map(|(y, (water, bigs))| {
           (0..self.width as i32 / SCALE).map(move |x| {
             let particle = bigs[water.big_idx(x, y)];
