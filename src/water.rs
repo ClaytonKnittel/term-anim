@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, rc::Rc};
 
 use termion::color;
 
@@ -189,13 +189,15 @@ impl Water {
 impl Entity for Water {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     // TODO: Think this may be copied for every row...
-    let bigs: Vec<_> = (0..self.height as i32 / SCALE)
-      .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))
-      .map(|(x, y)| self.get_big(x, y))
-      .collect();
+    let bigs: Rc<Vec<_>> = Rc::new(
+      (0..self.height as i32 / SCALE)
+        .flat_map(|y| (0..self.width as i32 / SCALE).map(move |x| (x, y)))
+        .map(|(x, y)| self.get_big(x, y))
+        .collect(),
+    );
     Box::new(
       (0..self.height as i32 / SCALE)
-        .zip(iter::repeat((self, bigs)))
+        .zip(iter::repeat((self, bigs.clone())))
         .flat_map(|(y, (water, bigs))| {
           (0..self.width as i32 / SCALE).map(move |x| {
             let particle = bigs[water.big_idx(x, y)];
