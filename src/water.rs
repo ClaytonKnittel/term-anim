@@ -188,10 +188,10 @@ impl Water {
   }
 
   fn click_tile(&mut self, x: u32, y: u32) {
-    if 1 <= x && x <= self.width / SCALE as u32 && 1 <= y && y <= self.height / SCALE as u32 {
+    if x < self.width / SCALE as u32 && y < self.height / SCALE as u32 {
       for dy in 0..SCALE as u32 {
         for dx in 0..SCALE as u32 {
-          match self.get_mut(SCALE as u32 * (x - 1) + dx, SCALE as u32 * (y - 1) + dy) {
+          match self.get_mut(SCALE as u32 * x + dx, SCALE as u32 * y + dy) {
             ParticleType::Normal(particle) => particle.pos = 1.,
             ParticleType::Fixed => {}
           }

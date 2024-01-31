@@ -67,7 +67,7 @@ impl Entity for Peach {
   fn click(&mut self, x: u32, y: u32) {
     let dx = self.x - x as i32;
     let dy = self.y - y as i32;
-    if (-1..=2).contains(&dx) && (-1..=2).contains(&dy) && (dx != -1 || dy != -1) {
+    if (-2..=1).contains(&dx) && (-2..=1).contains(&dy) && (dx != 1 || dy != 1) {
       self.state = PeachState::Held { dx, dy };
     }
   }

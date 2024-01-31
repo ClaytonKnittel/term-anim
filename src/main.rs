@@ -59,13 +59,13 @@ fn main() {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
         Ok(Event::Mouse(me)) => match me {
           MouseEvent::Press(_, x, y) => {
-            scene.click(x as u32, y as u32);
+            scene.click(x as u32 - 1, y as u32 - 1);
           }
           MouseEvent::Hold(x, y) => {
-            scene.drag(x as u32, y as u32);
+            scene.drag(x as u32 - 1, y as u32 - 1);
           }
           MouseEvent::Release(x, y) => {
-            scene.release(x as u32, y as u32);
+            scene.release(x as u32 - 1, y as u32 - 1);
           }
           _ => (),
         },
