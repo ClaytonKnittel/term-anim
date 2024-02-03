@@ -1,6 +1,6 @@
 use termion::color;
 
-use crate::{entity::Entity, util::Draw};
+use crate::{dialog::Dialog, entity::Entity, util::Draw};
 
 const Z_IDX: i32 = 10;
 
@@ -30,6 +30,7 @@ pub struct Bunny {
   stage: BunnyStage,
   direction: Direction,
   intent: BunnyIntent,
+  dialog: Option<Dialog>,
   pos: (i32, i32),
   t: usize,
 }
@@ -41,6 +42,7 @@ impl Bunny {
       stage: BunnyStage::Sleep1,
       direction: Direction::Right,
       intent: BunnyIntent::Idle,
+      dialog: None,
       pos,
       t: 0,
     }
@@ -137,7 +139,7 @@ impl Entity for Bunny {
       (BunnyState::Walk2, Direction::Right) => &RIGHT_STEP2,
     };
 
-    Box::new(bunny_str.iter().enumerate().flat_map(move |(y, row)| {
+    let bunny_iter = bunny_str.iter().enumerate().flat_map(move |(y, row)| {
       let y = y as i32 + self.pos.1;
 
       row.chars().enumerate().filter_map(move |(x, c)| {
@@ -153,14 +155,32 @@ impl Entity for Bunny {
           (x, y),
         ))
       })
-    }))
+    });
+
+    match &self.dialog {
+      Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
+      None => Box::new(bunny_iter),
+    }
   }
 
   fn tick(&mut self, t: usize) {
-    if t % 16 == 0 {
-      self.shift();
-    }
     self.t = t;
+
+    match self.stage {
+      BunnyStage::Sleep1 => {}
+      BunnyStage::Speak1 { t: initial_t } => {
+        let dt = t - initial_t;
+
+        if dt == 50 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 5, self.pos.1),
+            "Oh! Hello there!".to_string(),
+          ));
+        } else if dt == 150 {
+          self.dialog = None;
+        }
+      }
+    }
   }
 
   fn click(&mut self, x: u32, y: u32) {
