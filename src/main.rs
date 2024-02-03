@@ -3,6 +3,7 @@ mod dialog;
 mod entity;
 mod grass;
 mod landscape;
+mod main_scene;
 mod peach;
 mod scene;
 mod track;
@@ -14,10 +15,8 @@ mod window;
 
 use std::time::SystemTime;
 
-use bunny::Bunny;
-use dialog::Dialog;
 use entity::Entity;
-use landscape::Landscape;
+use main_scene::MainScene;
 use rand::{rngs, SeedableRng};
 use scene::Scene;
 use termion::async_stdin;
@@ -25,7 +24,6 @@ use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
-use train_scene::TrainScene;
 
 fn main() {
   let stdout = HideCursor::from(MouseTerminal::from(
@@ -42,15 +40,11 @@ fn main() {
 
   let mut r = rngs::StdRng::seed_from_u64(27418995609531717u64);
 
-  let bunny = Bunny::new();
-  let landscape = Landscape::new(window.width(), window.height(), &mut r);
-  let train_scene = TrainScene::new(window.width(), window.height());
+  let main_scene = MainScene::new(window.width(), window.height(), &mut r);
   // let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
-  scene.add_entity(bunny);
-  scene.add_entity(landscape);
-  scene.add_entity(train_scene);
+  scene.add_entity(main_scene);
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
