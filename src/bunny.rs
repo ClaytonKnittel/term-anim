@@ -11,8 +11,14 @@ enum BunnyState {
   Walk2,
 }
 
+enum Direction {
+  Left,
+  Right,
+}
+
 pub struct Bunny {
   state: BunnyState,
+  direction: Direction,
   pos: (i32, i32),
 }
 
@@ -20,6 +26,7 @@ impl Bunny {
   pub fn new() -> Self {
     Self {
       state: BunnyState::Walk1,
+      direction: Direction::Right,
       pos: (0, 0),
     }
   }
@@ -40,21 +47,35 @@ impl Bunny {
 }
 
 #[rustfmt::skip]
-const BUNNY1: [&str; 3] = [
+const RIGHT_SLEEP: [&str; 3] = [
   r#"(\(\"#,
   r#"(-.-)"#,
   r#"o_(")(")"#,
 ];
 
 #[rustfmt::skip]
-const BUNNY2: [&str; 3] = [
+const LEFT_SLEEP: [&str; 3] = [
+  r#"    /)/)"#,
+  r#"   (-.-)"#,
+  r#"(")(")_o"#,
+];
+
+#[rustfmt::skip]
+const RIGHT_WAKE: [&str; 3] = [
   r#"(\(\"#,
   r#"(o.o)"#,
   r#"o_(")(")"#,
 ];
 
 #[rustfmt::skip]
-const BUNNY3: [&str; 4] = [
+const LEFT_WAKE: [&str; 3] = [
+  r#"    /)/)"#,
+  r#"   (o.o)"#,
+  r#"(")(")_o"#,
+];
+
+#[rustfmt::skip]
+const RIGHT_STEP1: [&str; 4] = [
   r#" (\(\"#,
   r#" (o.o)"#,
   r#" (>_<)"#,
@@ -62,8 +83,24 @@ const BUNNY3: [&str; 4] = [
 ];
 
 #[rustfmt::skip]
-const BUNNY4: [&str; 4] = [
+const RIGHT_STEP2: [&str; 4] = [
   r#" (\(\"#,
+  r#" (o.o)"#,
+  r#" (>_<)"#,
+  r#"(") (")"#,
+];
+
+#[rustfmt::skip]
+const LEFT_STEP1: [&str; 4] = [
+  r#"  /)/)"#,
+  r#" (o.o)"#,
+  r#" (>_<)"#,
+  r#"(")(")"#,
+];
+
+#[rustfmt::skip]
+const LEFT_STEP2: [&str; 4] = [
+  r#"  /)/)"#,
   r#" (o.o)"#,
   r#" (>_<)"#,
   r#"(") (")"#,
@@ -71,11 +108,15 @@ const BUNNY4: [&str; 4] = [
 
 impl Entity for Bunny {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
-    let bunny_str: &[&str] = match self.state {
-      BunnyState::Sleep => &BUNNY1,
-      BunnyState::Wake => &BUNNY2,
-      BunnyState::Walk1 => &BUNNY3,
-      BunnyState::Walk2 => &BUNNY4,
+    let bunny_str: &[&str] = match (&self.state, &self.direction) {
+      (BunnyState::Sleep, Direction::Left) => &LEFT_SLEEP,
+      (BunnyState::Sleep, Direction::Right) => &RIGHT_SLEEP,
+      (BunnyState::Wake, Direction::Left) => &LEFT_WAKE,
+      (BunnyState::Wake, Direction::Right) => &RIGHT_WAKE,
+      (BunnyState::Walk1, Direction::Left) => &LEFT_STEP1,
+      (BunnyState::Walk1, Direction::Right) => &RIGHT_STEP1,
+      (BunnyState::Walk2, Direction::Left) => &LEFT_STEP2,
+      (BunnyState::Walk2, Direction::Right) => &RIGHT_STEP2,
     };
 
     Box::new(bunny_str.iter().enumerate().flat_map(move |(y, row)| {
