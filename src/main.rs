@@ -16,7 +16,6 @@ use std::time::SystemTime;
 use bunny::Bunny;
 use entity::Entity;
 use landscape::Landscape;
-use peach::Peach;
 use rand::{rngs, SeedableRng};
 use scene::Scene;
 use termion::async_stdin;
@@ -24,8 +23,6 @@ use termion::cursor::HideCursor;
 use termion::event::{Event, Key, MouseEvent};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
-use track::Track;
-use train::Train;
 use train_scene::TrainScene;
 
 fn main() {
@@ -67,7 +64,6 @@ fn main() {
           MouseEvent::Release(x, y) => {
             scene.release(x as u32 - 1, y as u32 - 1);
           }
-          _ => (),
         },
         Err(_) => break 'outer,
         _ => {}

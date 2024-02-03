@@ -62,7 +62,7 @@ impl Entity for Peach {
     )
   }
 
-  fn tick(&mut self, t: usize) {}
+  fn tick(&mut self, _t: usize) {}
 
   fn click(&mut self, x: u32, y: u32) {
     let dx = self.x - x as i32;

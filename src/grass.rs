@@ -23,15 +23,15 @@ impl Grass {
   }
 
   fn rand_tile<R: Rng>(rand: &mut R) -> Draw {
-    let c = match rand.gen_range(0..8) {
-      0 => '\'',
-      1 => '"',
-      2 => ';',
-      3 => ':',
-      4 => ',',
-      5 => '.',
-      6 => '`',
-      7 => '~',
+    let c = match rand.gen_range(0..69) {
+      0..=9 => ';',
+      10..=19 => ':',
+      20..=29 => '~',
+      30..=39 => '*',
+      40..=49 => '/',
+      50..=59 => '\\',
+      60..=63 => '$',
+      64..=68 => '%',
       _ => unreachable!(),
     };
 
@@ -70,7 +70,7 @@ impl Entity for Grass {
     }))
   }
 
-  fn tick(&mut self, t: usize) {}
+  fn tick(&mut self, _t: usize) {}
 
   fn click(&mut self, _x: u32, _y: u32) {}
   fn drag(&mut self, _x: u32, _y: u32) {}
