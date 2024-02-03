@@ -178,6 +178,22 @@ impl Entity for Bunny {
           ));
         } else if dt == 150 {
           self.dialog = None;
+        } else if dt == 200 {
+          self.state = BunnyState::Walk1;
+        } else if dt == 250 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 4, self.pos.1),
+            "I am so hungry, and my favorite food is carrots.".to_string(),
+          ));
+        } else if dt == 380 {
+          self.dialog = None;
+        } else if dt == 400 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 4, self.pos.1),
+            "Would you help me find a carrot?".to_string(),
+          ));
+        } else if dt == 500 {
+          self.dialog = None;
         }
       }
     }

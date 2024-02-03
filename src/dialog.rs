@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::{entity::Entity, util::Draw};
 
 const MAX_LINE_LEN: usize = 30;
@@ -149,6 +151,8 @@ impl Entity for Dialog {
       .chain(lines.into_iter().enumerate().flat_map(move |(row, line)| {
         line
           .chars()
+          .chain(iter::repeat(' '))
+          .take(max_line_len as usize)
           .collect::<Vec<_>>()
           .into_iter()
           .enumerate()
