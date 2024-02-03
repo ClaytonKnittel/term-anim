@@ -11,7 +11,7 @@ pub struct MainScene {
 impl MainScene {
   pub fn new<R: Rng>(width: u32, height: u32, r: &mut R) -> Self {
     Self {
-      bunny: Bunny::new(),
+      bunny: Bunny::new((width as i32 / 2 - 10, height as i32 / 2 - 10)),
       landscape: Landscape::new(width, height, r),
       train_scene: TrainScene::new(width, height),
     }

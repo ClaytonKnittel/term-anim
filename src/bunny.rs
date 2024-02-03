@@ -16,33 +16,51 @@ enum Direction {
   Right,
 }
 
+enum BunnyIntent {
+  Idle,
+}
+
+enum BunnyStage {
+  Sleep1,
+  Speak1 { t: usize },
+}
+
 pub struct Bunny {
   state: BunnyState,
+  stage: BunnyStage,
   direction: Direction,
+  intent: BunnyIntent,
   pos: (i32, i32),
+  t: usize,
 }
 
 impl Bunny {
-  pub fn new() -> Self {
+  pub fn new(pos: (i32, i32)) -> Self {
     Self {
-      state: BunnyState::Walk1,
+      state: BunnyState::Sleep,
+      stage: BunnyStage::Sleep1,
       direction: Direction::Right,
-      pos: (0, 0),
+      intent: BunnyIntent::Idle,
+      pos,
+      t: 0,
     }
   }
 
   pub fn shift(&mut self) {
-    match self.state {
-      BunnyState::Wake => {}
-      BunnyState::Sleep => {}
-      BunnyState::Walk1 => {
-        self.state = BunnyState::Walk2;
-        self.pos.0 += 1;
-      }
-      BunnyState::Walk2 => {
-        self.state = BunnyState::Walk1;
-      }
-    };
+    match self.intent {
+      BunnyIntent::Idle => {}
+    }
+    // match self.state {
+    //   BunnyState::Wake => {}
+    //   BunnyState::Sleep => {}
+    //   BunnyState::Walk1 => {
+    //     self.state = BunnyState::Walk2;
+    //     self.pos.0 += 1;
+    //   }
+    //   BunnyState::Walk2 => {
+    //     self.state = BunnyState::Walk1;
+    //   }
+    // };
   }
 }
 
@@ -142,9 +160,23 @@ impl Entity for Bunny {
     if t % 16 == 0 {
       self.shift();
     }
+    self.t = t;
   }
 
-  fn click(&mut self, _x: u32, _y: u32) {}
+  fn click(&mut self, x: u32, y: u32) {
+    let x = x as i32;
+    let y = y as i32;
+    if self.pos.0 <= x && x < self.pos.0 + 8 && self.pos.1 <= y && y < self.pos.1 + 4 {
+      match self.stage {
+        BunnyStage::Sleep1 => {
+          self.stage = BunnyStage::Speak1 { t: self.t };
+          self.state = BunnyState::Wake;
+        }
+        BunnyStage::Speak1 { t: _ } => {}
+      }
+    }
+  }
+
   fn drag(&mut self, _x: u32, _y: u32) {}
   fn release(&mut self, _x: u32, _y: u32) {}
 }

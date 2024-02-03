@@ -1,6 +1,12 @@
 use crate::{entity::Entity, peach::Peach, track::Track, train::Train};
 
+enum State {
+  Frozen,
+  Moving,
+}
+
 pub struct TrainScene {
+  state: State,
   track: Track,
   train: Train,
   peach: Peach,
@@ -9,10 +15,19 @@ pub struct TrainScene {
 impl TrainScene {
   pub fn new(width: u32, height: u32) -> Self {
     Self {
+      state: State::Frozen,
       track: Track::new(height * 5 / 8, width),
       train: Train::new(5, 4 * width as i32, height * 5 / 8 - 2),
       peach: Peach::new(30, 10),
     }
+  }
+
+  pub fn freeze(&mut self) {
+    self.state = State::Frozen;
+  }
+
+  pub fn unfreeze(&mut self) {
+    self.state = State::Moving;
   }
 }
 
@@ -28,9 +43,14 @@ impl Entity for TrainScene {
   }
 
   fn tick(&mut self, t: usize) {
-    self.track.tick(t);
-    self.train.tick(t);
-    self.peach.tick(t);
+    match self.state {
+      State::Frozen => {}
+      State::Moving => {
+        self.track.tick(t);
+        self.train.tick(t);
+        self.peach.tick(t);
+      }
+    }
   }
 
   fn click(&mut self, x: u32, y: u32) {
