@@ -9,6 +9,7 @@ enum BunnyState {
   Wake,
   Walk1,
   Walk2,
+  Blink { t: usize },
 }
 
 enum Direction {
@@ -22,7 +23,9 @@ enum BunnyIntent {
 
 enum BunnyStage {
   Sleep1,
+  // Wake up, ask for help finding carrot.
   Speak1 { t: usize },
+  AwaitDecision1,
 }
 
 pub struct Bunny {
@@ -111,6 +114,14 @@ const RIGHT_STEP2: [&str; 4] = [
 ];
 
 #[rustfmt::skip]
+const RIGHT_BLINK: [&str; 4] = [
+  r#" (\/)"#,
+  r#" (>.<)"#,
+  r#" (>_<)"#,
+  r#" (")(")"#,
+];
+
+#[rustfmt::skip]
 const LEFT_STEP1: [&str; 4] = [
   r#"  /)/)"#,
   r#" (o.o)"#,
@@ -126,6 +137,14 @@ const LEFT_STEP2: [&str; 4] = [
   r#"(") (")"#,
 ];
 
+#[rustfmt::skip]
+const LEFT_BLINK: [&str; 4] = [
+  r#"  (\/)"#,
+  r#" (>.<)"#,
+  r#" (>_<)"#,
+  r#"(")(")"#,
+];
+
 impl Entity for Bunny {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     let bunny_str: &[&str] = match (&self.state, &self.direction) {
@@ -137,6 +156,8 @@ impl Entity for Bunny {
       (BunnyState::Walk1, Direction::Right) => &RIGHT_STEP1,
       (BunnyState::Walk2, Direction::Left) => &LEFT_STEP2,
       (BunnyState::Walk2, Direction::Right) => &RIGHT_STEP2,
+      (BunnyState::Blink { t: _ }, Direction::Left) => &LEFT_BLINK,
+      (BunnyState::Blink { t: _ }, Direction::Right) => &RIGHT_BLINK,
     };
 
     let bunny_iter = bunny_str.iter().enumerate().flat_map(move |(y, row)| {
@@ -182,18 +203,27 @@ impl Entity for Bunny {
           self.state = BunnyState::Walk1;
         } else if dt == 250 {
           self.dialog = Some(Dialog::new(
-            (self.pos.0 + 4, self.pos.1),
+            (self.pos.0 + 6, self.pos.1),
             "I am so hungry, and my favorite food is carrots.".to_string(),
           ));
         } else if dt == 380 {
           self.dialog = None;
         } else if dt == 400 {
           self.dialog = Some(Dialog::new(
-            (self.pos.0 + 4, self.pos.1),
+            (self.pos.0 + 6, self.pos.1),
             "Would you help me find a carrot?".to_string(),
           ));
         } else if dt == 500 {
           self.dialog = None;
+          self.stage = BunnyStage::AwaitDecision1;
+        }
+      }
+      BunnyStage::AwaitDecision1 => {
+        if let BunnyState::Blink { t: initial_t } = self.state {
+          let dt = t - initial_t;
+          if dt == 6 {
+            self.state = BunnyState::Walk1;
+          }
         }
       }
     }
@@ -209,6 +239,9 @@ impl Entity for Bunny {
           self.state = BunnyState::Wake;
         }
         BunnyStage::Speak1 { t: _ } => {}
+        BunnyStage::AwaitDecision1 => {
+          self.state = BunnyState::Blink { t: self.t };
+        }
       }
     }
   }
