@@ -1,4 +1,5 @@
 mod bunny;
+mod dialog;
 mod entity;
 mod grass;
 mod landscape;
@@ -14,6 +15,7 @@ mod window;
 use std::time::SystemTime;
 
 use bunny::Bunny;
+use dialog::Dialog;
 use entity::Entity;
 use landscape::Landscape;
 use rand::{rngs, SeedableRng};
@@ -43,11 +45,13 @@ fn main() {
   let bunny = Bunny::new();
   let landscape = Landscape::new(window.width(), window.height(), &mut r);
   let train_scene = TrainScene::new(window.width(), window.height());
+  let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
   scene.add_entity(bunny);
   scene.add_entity(landscape);
   scene.add_entity(train_scene);
+  scene.add_entity(text);
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
