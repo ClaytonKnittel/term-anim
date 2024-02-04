@@ -1,4 +1,4 @@
-use termion::color;
+use termion::color::{self, AnsiValue};
 
 use crate::{
   entity::Entity,
@@ -14,6 +14,24 @@ const HOLE: [&str; 4] = [
   r#"H   H"#,
   r#"HL _H"#,
   r#" === "#,
+];
+
+const fn const_rgb(r: u8, g: u8, b: u8) -> color::AnsiValue {
+  AnsiValue(16 + 36 * r + 6 * g + b)
+}
+
+const KAZOO: [(char, (i32, i32), color::AnsiValue, color::AnsiValue); 11] = [
+  ('/', (0, 0), const_rgb(4, 0, 0), const_rgb(4, 0, 0)),
+  ('\\', (-1, -1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('|', (0, -1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('/', (1, -1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('-', (-1, 0), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('-', (-2, 0), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('-', (1, 0), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('-', (2, 0), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('/', (-1, 1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('|', (0, 1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
+  ('\\', (1, 1), const_rgb(5, 5, 5), const_rgb(2, 2, 2)),
 ];
 
 pub struct Hole {
@@ -95,19 +113,19 @@ impl Entity for Hole {
           )
         }))
         .chain(match self.kazoo {
-          Some(kazoo_t) => Box::new(
-            [(
-              Draw::new('/')
-                .with_fg(color::AnsiValue::rgb(4, 0, 0))
-                .with_z(Z_IDX),
-              explosion_path(
-                (self.t - kazoo_t) as f32,
-                (24, 5),
-                (self.pos.0 + 2, self.pos.1 + 2),
-              ),
-            )]
-            .into_iter(),
-          ) as Box<dyn Iterator<Item = (Draw, (i32, i32))>>,
+          Some(kazoo_t) => Box::new(KAZOO.iter().map(move |(c, (dx, dy), color1, color2)| {
+            let (x, y) = explosion_path(
+              (self.t - kazoo_t) as f32,
+              (24, 5),
+              (self.pos.0 + 2, self.pos.1 + 2),
+            );
+            let color = if (self.t / 30) % 2 == 0 {
+              *color1
+            } else {
+              *color2
+            };
+            (Draw::new(*c).with_fg(color).with_z(Z_IDX), (x + dx, y + dy))
+          })) as Box<dyn Iterator<Item = (Draw, (i32, i32))>>,
           None => Box::new([].into_iter()),
         }),
     )
