@@ -58,6 +58,7 @@ enum BunnyStage {
   AwaitDecisionHole,
   WalkToHole { t: usize, init_pos: (i32, i32) },
   HoleDialog { t: usize, dialog_idx: u32 },
+  Dig { clicks_remaining: u32 },
 }
 
 pub struct Bunny<'a> {
@@ -492,9 +493,19 @@ impl<'a> Entity for Bunny<'a> {
               ));
             }
           }
+          1 => {
+            if dt == 10 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 - 2, self.pos.1),
+                "Could you help me dig? Try clicking on the hole really really fast!".to_string(),
+                true,
+              ));
+            }
+          }
           _ => unreachable!(),
         }
       }
+      BunnyStage::Dig { clicks_remaining } => {}
     }
   }
 
@@ -612,12 +623,12 @@ impl<'a> Entity for Bunny<'a> {
       BunnyStage::HoleDialog { t, dialog_idx } => {
         if match dialog_idx {
           0 => self.t >= t + 50,
+          1 => self.t >= t + 10,
           _ => unreachable!(),
         } {
-          if dialog_idx == 2 {
-            self.stage = BunnyStage::AwaitPeachDestruction {
-              t: self.t,
-              rem_peaches: 4,
+          if dialog_idx == 1 {
+            self.stage = BunnyStage::Dig {
+              clicks_remaining: 50,
             };
           } else {
             self.stage = BunnyStage::HoleDialog {
@@ -628,6 +639,7 @@ impl<'a> Entity for Bunny<'a> {
           self.dialog = None;
         }
       }
+      BunnyStage::Dig { clicks_remaining } => {}
     }
   }
 
