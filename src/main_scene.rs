@@ -1,26 +1,28 @@
-use rand::Rng;
+use rand::rngs::StdRng;
 
 use crate::{bunny::Bunny, entity::Entity, landscape::Landscape};
 
-pub struct MainScene {
-  bunny: Bunny,
+pub struct MainScene<'a> {
+  bunny: Bunny<'a>,
   landscape: Landscape,
 }
 
-impl MainScene {
-  pub fn new<R: Rng>(width: u32, height: u32, r: &mut R) -> Self {
+impl<'a> MainScene<'a> {
+  pub fn new(width: u32, height: u32, r: &'a mut StdRng) -> Self {
+    let landscape = Landscape::new(width, height, r);
     Self {
       bunny: Bunny::new(
         (width as i32 / 2 - 10, height as i32 / 2 - 10),
         width,
         height,
+        r,
       ),
-      landscape: Landscape::new(width, height, r),
+      landscape,
     }
   }
 }
 
-impl Entity for MainScene {
+impl<'a> Entity for MainScene<'a> {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (crate::util::Draw, (i32, i32))> + '_> {
     Box::new(
       self

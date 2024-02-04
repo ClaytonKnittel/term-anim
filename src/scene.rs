@@ -1,20 +1,20 @@
 use crate::entity::Entity;
 
-pub struct Scene {
-  entities: Vec<Box<dyn Entity>>,
+pub struct Scene<'a> {
+  entities: Vec<Box<dyn Entity + 'a>>,
 }
 
-impl Scene {
+impl<'a> Scene<'a> {
   pub fn new() -> Self {
     Self { entities: vec![] }
   }
 
-  pub fn add_entity<E: Entity + 'static>(&mut self, entity: E) {
-    self.entities.push(Box::new(entity));
+  pub fn add_entity<E: Entity + 'a>(&mut self, entity: Box<E>) {
+    self.entities.push(entity);
   }
 }
 
-impl Entity for Scene {
+impl<'a> Entity for Scene<'a> {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (crate::util::Draw, (i32, i32))> + '_> {
     Box::new(
       self

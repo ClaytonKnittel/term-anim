@@ -46,6 +46,10 @@ impl Train {
   pub fn reset(&mut self) {
     self.x = self.orig_x;
   }
+
+  pub fn collides_with_front(&self, pos: (i32, i32)) -> bool {
+    (0..4).contains(&(pos.0 - self.x)) && (pos.1 - self.y as i32) == 2
+  }
 }
 
 impl Entity for Train {

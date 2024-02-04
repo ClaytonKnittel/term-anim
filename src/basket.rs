@@ -39,6 +39,18 @@ impl Basket {
     (0..12).contains(&dx) && (0..6).contains(&dy) && ((dx != 0 && dx != 11) || dy != 0)
   }
 
+  pub fn peaches_mut(&mut self) -> impl Iterator<Item = &mut Peach> {
+    self.peaches.iter_mut()
+  }
+
+  pub fn num_peaches(&self) -> usize {
+    self.peaches.len()
+  }
+
+  pub fn peach_at_mut(&mut self, idx: usize) -> &mut Peach {
+    &mut self.peaches[idx]
+  }
+
   pub fn splode(&mut self) {
     self.peaches.first_mut().unwrap().explode(vec![
       ('H', (60, 5)),

@@ -44,11 +44,25 @@ impl Peach {
     }
   }
 
+  pub fn exploded(&self) -> bool {
+    matches!(
+      self.state,
+      PeachState::Explode {
+        t: _,
+        target_letters: _,
+      }
+    )
+  }
+
   pub fn explode(&mut self, target_letters: Vec<(char, (i32, i32))>) {
     self.state = PeachState::Explode {
       t: self.t,
       target_letters,
     };
+  }
+
+  pub fn hitbox(&self) -> (i32, i32) {
+    (self.x + 1, self.y + 1)
   }
 }
 

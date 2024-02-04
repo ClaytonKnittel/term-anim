@@ -1,3 +1,4 @@
+use rand::{rngs::StdRng, Rng};
 use termion::color;
 
 use crate::{basket::Basket, dialog::Dialog, entity::Entity, train_scene::TrainScene, util::Draw};
@@ -5,6 +6,29 @@ use crate::{basket::Basket, dialog::Dialog, entity::Entity, train_scene::TrainSc
 const Z_IDX: i32 = 10;
 // const STEP_PERIOD: usize = 10;
 const STEP_PERIOD: usize = 1;
+
+const LETTERS: [(char, (i32, i32)); 20] = [
+  ('H', (60, 5)),
+  ('a', (61, 5)),
+  ('p', (62, 5)),
+  ('p', (63, 5)),
+  ('y', (64, 5)),
+  ('B', (59, 7)),
+  ('i', (60, 7)),
+  ('r', (61, 7)),
+  ('t', (62, 7)),
+  ('h', (63, 7)),
+  ('d', (64, 7)),
+  ('a', (65, 7)),
+  ('y', (66, 7)),
+  ('E', (60, 9)),
+  ('u', (61, 9)),
+  ('g', (62, 9)),
+  ('e', (63, 9)),
+  ('n', (64, 9)),
+  ('i', (65, 9)),
+  ('a', (66, 9)),
+];
 
 enum BunnyState {
   Sleep,
@@ -30,7 +54,7 @@ enum BunnyStage {
   AwaitPeachDestruction,
 }
 
-pub struct Bunny {
+pub struct Bunny<'a> {
   state: BunnyState,
   stage: BunnyStage,
   direction: Direction,
@@ -39,10 +63,12 @@ pub struct Bunny {
   t: usize,
   basket: Basket,
   train_scene: TrainScene,
+  unused_letters: Vec<usize>,
+  rng: &'a mut StdRng,
 }
 
-impl Bunny {
-  pub fn new(pos: (i32, i32), width: u32, height: u32) -> Self {
+impl<'a> Bunny<'a> {
+  pub fn new(pos: (i32, i32), width: u32, height: u32, rng: &'a mut StdRng) -> Self {
     Self {
       state: BunnyState::Sleep,
       stage: BunnyStage::Sleep1,
@@ -52,6 +78,8 @@ impl Bunny {
       t: 0,
       basket: Basket::new((9, 10)),
       train_scene: TrainScene::new(width, height),
+      unused_letters: (0..20).collect(),
+      rng,
     }
   }
 
@@ -99,6 +127,20 @@ impl Bunny {
         init_pos.1 + ((step_num as i32 - dx.abs()) / 2) * dy.signum(),
       );
     }
+  }
+
+  fn random_guaranteed_letters(&mut self) -> Vec<(char, (i32, i32))> {
+    const NUM_TARGETS: u32 = 6;
+    const TOTAL_LEN: u32 = LETTERS.len() as u32;
+
+    let idx = self.unused_letters.len() as u32 * NUM_TARGETS / TOTAL_LEN;
+    let num_to_take = (idx * TOTAL_LEN / NUM_TARGETS) - ((idx - 1) * TOTAL_LEN / NUM_TARGETS);
+    (0..num_to_take)
+      .map(|_| {
+        let rand_idx = self.rng.gen_range(0..self.unused_letters.len());
+        LETTERS[self.unused_letters.remove(rand_idx)]
+      })
+      .collect()
   }
 }
 
@@ -178,7 +220,7 @@ const LEFT_BLINK: [&str; 4] = [
   r#"(")(")"#,
 ];
 
-impl Entity for Bunny {
+impl<'a> Entity for Bunny<'a> {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     let bunny_str: &[&str] = match (&self.state, &self.direction) {
       (BunnyState::Sleep, Direction::Left) => &LEFT_SLEEP,
@@ -266,7 +308,7 @@ impl Entity for Bunny {
           _ => unreachable!(),
         }
       }
-      BunnyStage::AwaitDecision1 | BunnyStage::AwaitPeachDestruction => {
+      BunnyStage::AwaitDecision1 => {
         if let BunnyState::Blink { t: initial_t } = self.state {
           let dt = t - initial_t;
           if dt == 6 {
@@ -323,6 +365,26 @@ impl Entity for Bunny {
             }
           }
           _ => unreachable!(),
+        }
+      }
+      BunnyStage::AwaitPeachDestruction => {
+        if let BunnyState::Blink { t: initial_t } = self.state {
+          let dt = t - initial_t;
+          if dt == 6 {
+            self.state = BunnyState::Walk1;
+          }
+        }
+
+        for peach_idx in 0..self.basket.num_peaches() {
+          if !self.basket.peach_at_mut(peach_idx).exploded()
+            && self
+              .train_scene
+              .train()
+              .collides_with_front(self.basket.peach_at_mut(peach_idx).hitbox())
+          {
+            let letters = self.random_guaranteed_letters();
+            self.basket.peach_at_mut(peach_idx).explode(letters);
+          }
         }
       }
     }
@@ -397,7 +459,6 @@ impl Entity for Bunny {
       BunnyStage::AwaitPeachDestruction => {
         if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
-          self.basket.splode();
         }
       }
     }

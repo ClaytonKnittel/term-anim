@@ -27,6 +27,10 @@ impl TrainScene {
   pub fn unfreeze(&mut self) {
     self.state = State::Moving;
   }
+
+  pub fn train(&self) -> &Train {
+    &self.train
+  }
 }
 
 impl Entity for TrainScene {

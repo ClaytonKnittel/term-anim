@@ -45,7 +45,7 @@ fn main() {
   // let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
-  scene.add_entity(main_scene);
+  scene.add_entity(Box::new(main_scene));
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
