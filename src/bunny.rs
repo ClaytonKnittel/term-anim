@@ -56,6 +56,8 @@ enum BunnyStage {
   AwaitPeachDestruction { t: usize, rem_peaches: u32 },
   PeachesHaveNoCarrots { t: usize, dialog_idx: u32 },
   AwaitDecisionHole,
+  WalkToHole { t: usize, init_pos: (i32, i32) },
+  HoleDialog { t: usize, dialog_idx: u32 },
 }
 
 pub struct Bunny<'a> {
@@ -291,6 +293,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 5, self.pos.1),
                 "Oh! Hello there!".to_string(),
+                false,
               ));
             }
           }
@@ -301,6 +304,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 6, self.pos.1),
                 "I am so hungry, and my favorite food is carrots.".to_string(),
+                false,
               ));
             }
           }
@@ -309,6 +313,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 6, self.pos.1),
                 "Would you help me find a carrot?".to_string(),
+                false,
               ));
               self.stage = BunnyStage::AwaitDecision1;
             }
@@ -349,6 +354,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 7, self.pos.1),
                 "Why, this basket seems to be full of peaches!".to_string(),
+                false,
               ));
             }
           }
@@ -359,6 +365,7 @@ impl<'a> Entity for Bunny<'a> {
                 "It's a shame that I don't like peaches. Maybe if I can \
                  figure out how to open a peach, there will be a carrot inside."
                   .to_string(),
+                false,
               ));
             }
           }
@@ -369,6 +376,7 @@ impl<'a> Entity for Bunny<'a> {
                 "Hey, are those train tracks? Maybe if the peaches collide \
                  with the nose of a passing train, they will open!"
                   .to_string(),
+                false,
               ));
             }
           }
@@ -431,6 +439,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 7, self.pos.1),
                 "Whelp, those peaches didn't have any carrots inside...".to_string(),
+                false,
               ));
             }
           }
@@ -439,6 +448,7 @@ impl<'a> Entity for Bunny<'a> {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 + 7, self.pos.1),
                 "Could there be a carrot hidden somewhere else?".to_string(),
+                false,
               ));
             }
           }
@@ -451,6 +461,38 @@ impl<'a> Entity for Bunny<'a> {
           if dt == 6 {
             self.state = BunnyState::Walk1;
           }
+        }
+      }
+      BunnyStage::WalkToHole {
+        t: initial_t,
+        init_pos,
+      } => {
+        const TARGET: (i32, i32) = (95, 12);
+        let dt = t - initial_t;
+        if dt > self.dt_to_completion(init_pos, TARGET) {
+          self.stage = BunnyStage::HoleDialog { t, dialog_idx: 0 };
+          self.state = BunnyState::Walk1;
+        } else {
+          self.interpolate_pos(t - initial_t, init_pos, TARGET);
+        }
+      }
+      BunnyStage::HoleDialog {
+        t: initial_t,
+        dialog_idx,
+      } => {
+        let dt = t - initial_t;
+
+        match dialog_idx {
+          0 => {
+            if dt == 50 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 7, self.pos.1),
+                "A hole?? Maybe there's a carrot in here!".to_string(),
+                false,
+              ));
+            }
+          }
+          _ => unreachable!(),
         }
       }
     }
@@ -558,7 +600,33 @@ impl<'a> Entity for Bunny<'a> {
         if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
         }
-        // TODO
+        if self.hole.contains_click((x, y)) {
+          self.stage = BunnyStage::WalkToHole {
+            t: self.t,
+            init_pos: self.pos,
+          };
+          self.dialog = None;
+        }
+      }
+      BunnyStage::WalkToHole { t: _, init_pos: _ } => {}
+      BunnyStage::HoleDialog { t, dialog_idx } => {
+        if match dialog_idx {
+          0 => self.t >= t + 50,
+          _ => unreachable!(),
+        } {
+          if dialog_idx == 2 {
+            self.stage = BunnyStage::AwaitPeachDestruction {
+              t: self.t,
+              rem_peaches: 4,
+            };
+          } else {
+            self.stage = BunnyStage::HoleDialog {
+              t: self.t,
+              dialog_idx: dialog_idx + 1,
+            };
+          }
+          self.dialog = None;
+        }
       }
     }
   }

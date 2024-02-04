@@ -20,6 +20,12 @@ impl Hole {
   pub fn new(pos: (i32, i32)) -> Self {
     Self { pos }
   }
+
+  pub fn contains_click(&self, pos: (i32, i32)) -> bool {
+    let dx = pos.0 - self.pos.0;
+    let dy = pos.1 - self.pos.1;
+    (0..5).contains(&dx) && (0..4).contains(&dy)
+  }
 }
 
 impl Entity for Hole {

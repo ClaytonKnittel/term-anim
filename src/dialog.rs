@@ -8,11 +8,12 @@ const Z_IDX: i32 = 10;
 pub struct Dialog {
   src: (i32, i32),
   text: String,
+  to_left: bool,
 }
 
 impl Dialog {
-  pub fn new(src: (i32, i32), text: String) -> Self {
-    Self { src, text }
+  pub fn new(src: (i32, i32), text: String, to_left: bool) -> Self {
+    Self { src, text, to_left }
   }
 
   fn to_lines(&self) -> Vec<String> {
@@ -49,6 +50,12 @@ impl Dialog {
   |  Sample text  |
   |              /
   L ------------
+
+     ------------
+   /              \
+  |  Sample text  |
+  \               |
+    ------------- +
 */
 
 impl Entity for Dialog {
@@ -61,71 +68,66 @@ impl Entity for Dialog {
       .max()
       .expect("Cannot render empty text in dialog box") as i32;
 
+    let x = self.src.0 - if self.to_left { max_line_len + 5 } else { 0 };
+    let y = self.src.1;
+    let dlx = if self.to_left { 1 } else { 0 };
+
     Box::new(
       [
-        (Draw::new('L').with_z(Z_IDX), self.src),
-        (Draw::new(' ').with_z(Z_IDX), (self.src.0 + 1, self.src.1)),
+        if self.to_left {
+          (Draw::new('+').with_z(Z_IDX), (x + max_line_len + 5, y))
+        } else {
+          (Draw::new('L').with_z(Z_IDX), self.src)
+        },
+        (Draw::new(' ').with_z(Z_IDX), (x + 1 + dlx, y)),
         (
           Draw::new(' ').with_z(Z_IDX),
-          (self.src.0 + 1, self.src.1 - num_lines - 3),
+          (x + 1 + dlx, y - num_lines - 3),
         ),
         (
           Draw::new(' ').with_z(Z_IDX),
-          (self.src.0 + max_line_len + 3, self.src.1),
+          (x + max_line_len + 3 + dlx, y),
         ),
         (
           Draw::new(' ').with_z(Z_IDX),
-          (self.src.0 + max_line_len + 3, self.src.1 - num_lines - 3),
+          (x + max_line_len + 3 + dlx, y - num_lines - 3),
         ),
-        (
-          Draw::new('/').with_z(Z_IDX),
-          (self.src.0, self.src.1 - num_lines - 2),
-        ),
-        (
-          Draw::new('/').with_z(Z_IDX),
-          (self.src.0 + max_line_len + 4, self.src.1 - 1),
-        ),
+        (Draw::new('/').with_z(Z_IDX), (x + dlx, y - num_lines - 2)),
+        if self.to_left {
+          (Draw::new('\\').with_z(Z_IDX), (x + 1, y - 1))
+        } else {
+          (Draw::new('/').with_z(Z_IDX), (x + max_line_len + 4, y - 1))
+        },
         (
           Draw::new('\\').with_z(Z_IDX),
-          (self.src.0 + max_line_len + 4, self.src.1 - num_lines - 2),
+          (x + max_line_len + 4 + dlx, y - num_lines - 2),
         ),
       ]
       .into_iter()
-      .chain((0..max_line_len + 1).map(|dx| {
-        (
-          Draw::new('-').with_z(Z_IDX),
-          (self.src.0 + dx + 2, self.src.1),
-        )
-      }))
+      .chain(
+        (0..max_line_len + 1).map(move |dx| (Draw::new('-').with_z(Z_IDX), (x + dx + 2 + dlx, y))),
+      )
       .chain((0..max_line_len + 1).map(move |dx| {
         (
           Draw::new('-').with_z(Z_IDX),
-          (self.src.0 + dx + 2, self.src.1 - num_lines - 3),
+          (x + dx + 2 + dlx, y - num_lines - 3),
         )
       }))
-      .chain((0..max_line_len + 3).map(|dx| {
-        (
-          Draw::new(' ').with_z(Z_IDX),
-          (self.src.0 + dx + 1, self.src.1 - 1),
-        )
-      }))
+      .chain(
+        (0..max_line_len + 3)
+          .map(move |dx| (Draw::new(' ').with_z(Z_IDX), (x + dx + 1 + dlx, y - 1))),
+      )
       .chain((0..num_lines).flat_map(move |dy| {
         vec![
+          (Draw::new(' ').with_z(Z_IDX), (x + 1, y - 2 - dy)),
+          (Draw::new(' ').with_z(Z_IDX), (x + 2, y - 2 - dy)),
           (
             Draw::new(' ').with_z(Z_IDX),
-            (self.src.0 + 1, self.src.1 - 2 - dy),
+            (x + max_line_len + 3, y - 2 - dy),
           ),
           (
             Draw::new(' ').with_z(Z_IDX),
-            (self.src.0 + 2, self.src.1 - 2 - dy),
-          ),
-          (
-            Draw::new(' ').with_z(Z_IDX),
-            (self.src.0 + max_line_len + 3, self.src.1 - 2 - dy),
-          ),
-          (
-            Draw::new(' ').with_z(Z_IDX),
-            (self.src.0 + max_line_len + 4, self.src.1 - 2 - dy),
+            (x + max_line_len + 4, y - 2 - dy),
           ),
         ]
         .into_iter()
@@ -133,21 +135,18 @@ impl Entity for Dialog {
       .chain((0..max_line_len + 3).map(move |dx| {
         (
           Draw::new(' ').with_z(Z_IDX),
-          (self.src.0 + dx + 1, self.src.1 - num_lines - 2),
+          (x + dx + 1 + dlx, y - num_lines - 2),
         )
       }))
-      .chain((0..num_lines + 1).map(|dy| {
-        (
-          Draw::new('|').with_z(Z_IDX),
-          (self.src.0, self.src.1 - dy - 1),
-        )
-      }))
-      .chain((0..num_lines).map(move |dy| {
-        (
-          Draw::new('|').with_z(Z_IDX),
-          (self.src.0 + max_line_len + 5, self.src.1 - dy - 2),
-        )
-      }))
+      .chain((dlx..num_lines + 1).map(move |dy| (Draw::new('|').with_z(Z_IDX), (x, y - dy - 1))))
+      .chain(
+        (if self.to_left { -1 } else { 0 }..num_lines).map(move |dy| {
+          (
+            Draw::new('|').with_z(Z_IDX),
+            (x + max_line_len + 5, y - dy - 2),
+          )
+        }),
+      )
       .chain(lines.into_iter().enumerate().flat_map(move |(row, line)| {
         line
           .chars()
@@ -159,10 +158,7 @@ impl Entity for Dialog {
           .map(move |(col, c)| {
             (
               Draw::new(c).with_z(Z_IDX),
-              (
-                self.src.0 + col as i32 + 3,
-                self.src.1 - num_lines - 1 + row as i32,
-              ),
+              (x + col as i32 + 3, y - num_lines - 1 + row as i32),
             )
           })
       })),
