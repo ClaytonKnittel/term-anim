@@ -6,6 +6,7 @@ use crate::{
 };
 
 const Z_IDX: i32 = 20;
+const DEBRIS_Z_IDX: i32 = 6;
 
 #[rustfmt::skip]
 const HOLE: [&str; 4] = [
@@ -80,7 +81,7 @@ impl Entity for Hole {
           (
             Draw::new(*c)
               .with_fg(color::AnsiValue::rgb(2, 1, 0))
-              .with_z(Z_IDX + if *targeted { 1 } else { 0 }),
+              .with_z(DEBRIS_Z_IDX + if *targeted { 1 } else { 0 }),
             explosion_path(
               (self.t - t) as f32,
               (*x, *y),

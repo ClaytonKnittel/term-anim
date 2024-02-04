@@ -62,6 +62,7 @@ enum BunnyStage {
   WalkToHole { t: usize, init_pos: (i32, i32) },
   HoleDialog { t: usize, dialog_idx: u32 },
   Dig,
+  HoleHasNoCarrots { t: usize, dialog_idx: u32 },
 }
 
 pub struct Bunny<'a> {
@@ -520,6 +521,34 @@ impl<'a> Entity for Bunny<'a> {
         }
       }
       BunnyStage::Dig => {}
+      BunnyStage::HoleHasNoCarrots {
+        t: initial_t,
+        dialog_idx,
+      } => {
+        let dt = t - initial_t;
+
+        match dialog_idx {
+          0 => {
+            if dt == 50 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 - 2, self.pos.1),
+                "Whelp, that hole didn't seem to have any carrots, but I think I saw a kazoo fly out...".to_string(),
+                true,
+              ));
+            }
+          }
+          1 => {
+            if dt == 10 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 - 2, self.pos.1),
+                "Could there be a carrot hidden somewhere else?".to_string(),
+                true,
+              ));
+            }
+          }
+          _ => unreachable!(),
+        }
+      }
     }
   }
 
@@ -691,7 +720,32 @@ impl<'a> Entity for Bunny<'a> {
       }
       BunnyStage::Dig => {
         if self.hole.contains_click((x, y)) && !(0..10).all(|_| self.hole.fling()) {
-          // TODO
+          self.stage = BunnyStage::HoleHasNoCarrots {
+            t: self.t,
+            dialog_idx: 0,
+          };
+          self.completed_activities += 1;
+        }
+      }
+      BunnyStage::HoleHasNoCarrots { t, dialog_idx } => {
+        if match dialog_idx {
+          0 => self.t >= t + 50,
+          1 => self.t >= t + 10,
+          _ => unreachable!(),
+        } {
+          if dialog_idx == 1 {
+            if self.completed_activities == 2 {
+              // TODO
+            } else {
+              self.stage = BunnyStage::AwaitDecisionBasket;
+            }
+          } else {
+            self.stage = BunnyStage::HoleHasNoCarrots {
+              t: self.t,
+              dialog_idx: dialog_idx + 1,
+            };
+          }
+          self.dialog = None;
         }
       }
     }
