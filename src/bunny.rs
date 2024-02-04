@@ -1,4 +1,6 @@
-use rand::{rngs::StdRng, Rng};
+use std::f32::consts::PI;
+
+use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use termion::color;
 
 use crate::{
@@ -59,7 +61,7 @@ enum BunnyStage {
   AwaitDecisionHole,
   WalkToHole { t: usize, init_pos: (i32, i32) },
   HoleDialog { t: usize, dialog_idx: u32 },
-  Dig { clicks_remaining: u32 },
+  Dig,
 }
 
 pub struct Bunny<'a> {
@@ -517,7 +519,7 @@ impl<'a> Entity for Bunny<'a> {
           _ => unreachable!(),
         }
       }
-      BunnyStage::Dig { clicks_remaining } => {}
+      BunnyStage::Dig => {}
     }
   }
 
@@ -662,9 +664,22 @@ impl<'a> Entity for Bunny<'a> {
           _ => unreachable!(),
         } {
           if dialog_idx == 1 {
-            self.stage = BunnyStage::Dig {
-              clicks_remaining: 50,
-            };
+            self.stage = BunnyStage::Dig;
+            let mut letters: Vec<_> = self
+              .random_guaranteed_letters()
+              .into_iter()
+              .map(|letter| (true, letter.0, letter.1))
+              .chain((0..200).map(|_| {
+                let dr = self.rng.gen_range(5.0..50.);
+                let dt = self.rng.gen_range(PI * 0.75..PI * 1.25);
+                let dx = (dt.cos() * dr) as i32;
+                let dy = (dt.sin() * dr) as i32;
+                let letter = self.rng.gen_range('a'..='z');
+                (false, letter, (self.pos.0 + 2 + dx, self.pos.1 + 2 + dy))
+              }))
+              .collect();
+            letters.shuffle(self.rng);
+            self.hole.add_dirt(letters);
           } else {
             self.stage = BunnyStage::HoleDialog {
               t: self.t,
@@ -674,7 +689,11 @@ impl<'a> Entity for Bunny<'a> {
           self.dialog = None;
         }
       }
-      BunnyStage::Dig { clicks_remaining } => {}
+      BunnyStage::Dig => {
+        if self.hole.contains_click((x, y)) && !(0..10).all(|_| self.hole.fling()) {
+          // TODO
+        }
+      }
     }
   }
 
