@@ -1,7 +1,9 @@
 use rand::{rngs::StdRng, Rng};
 use termion::color;
 
-use crate::{basket::Basket, dialog::Dialog, entity::Entity, train_scene::TrainScene, util::Draw};
+use crate::{
+  basket::Basket, dialog::Dialog, entity::Entity, hole::Hole, train_scene::TrainScene, util::Draw,
+};
 
 const Z_IDX: i32 = 10;
 // const STEP_PERIOD: usize = 10;
@@ -65,6 +67,7 @@ pub struct Bunny<'a> {
   t: usize,
   basket: Basket,
   train_scene: TrainScene,
+  hole: Hole,
   unused_letters: Vec<usize>,
   rng: &'a mut StdRng,
 }
@@ -80,6 +83,7 @@ impl<'a> Bunny<'a> {
       t: 0,
       basket: Basket::new((9, 10)),
       train_scene: TrainScene::new(width, height),
+      hole: Hole::new((102, 12)),
       unused_letters: (0..20).collect(),
       rng,
     }
@@ -258,7 +262,8 @@ impl<'a> Entity for Bunny<'a> {
         })
       })
       .chain(self.basket.iterate_tiles())
-      .chain(self.train_scene.iterate_tiles());
+      .chain(self.train_scene.iterate_tiles())
+      .chain(self.hole.iterate_tiles());
 
     match &self.dialog {
       Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
@@ -269,6 +274,7 @@ impl<'a> Entity for Bunny<'a> {
   fn tick(&mut self, t: usize) {
     self.train_scene.tick(t);
     self.basket.tick(t);
+    self.hole.tick(t);
     self.t = t;
 
     match self.stage {
@@ -395,6 +401,7 @@ impl<'a> Entity for Bunny<'a> {
             t: self.t,
             dialog_idx: 0,
           };
+          self.train_scene.freeze();
         }
 
         for peach_idx in 0..self.basket.num_peaches() {

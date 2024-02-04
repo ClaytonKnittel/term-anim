@@ -50,6 +50,21 @@ impl Train {
   pub fn collides_with_front(&self, pos: (i32, i32)) -> bool {
     (0..4).contains(&(pos.0 - self.x)) && (pos.1 - self.y as i32) == 2
   }
+
+  fn train_len(&self) -> i32 {
+    let engine_len = TRAIN_ENGINE[0].chars().count() as i32;
+    let cabin_len = TRAIN_CABIN[0].chars().count() as i32;
+    let caboose_len = TRAIN_CABOOSE[0].chars().count() as i32;
+    engine_len + cabin_len * (self.len as i32 - 2) + caboose_len
+  }
+
+  pub fn left_x(&self) -> i32 {
+    self.x
+  }
+
+  pub fn right_x(&self) -> i32 {
+    self.x + self.train_len() - 1
+  }
 }
 
 impl Entity for Train {
@@ -100,10 +115,7 @@ impl Entity for Train {
   fn tick(&mut self, _t: usize) {
     self.x -= 2;
 
-    let engine_len = TRAIN_ENGINE[0].chars().count() as i32;
-    let cabin_len = TRAIN_CABIN[0].chars().count() as i32;
-    let caboose_len = TRAIN_CABOOSE[0].chars().count() as i32;
-    if engine_len + cabin_len * (self.len as i32 - 2) + caboose_len + self.x < -300 {
+    if self.train_len() + self.x < -300 {
       self.reset();
     }
   }

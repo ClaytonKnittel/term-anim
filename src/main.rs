@@ -3,6 +3,7 @@ mod bunny;
 mod dialog;
 mod entity;
 mod grass;
+mod hole;
 mod landscape;
 mod main_scene;
 mod peach;
