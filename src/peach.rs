@@ -115,7 +115,7 @@ impl Entity for Peach {
           let dt = (self.t - t) as f32;
           let dx = (x - self.x) as f32;
           let dy = (y - self.y) as f32;
-          let target_t = dx.abs() * 0.5 + 2.;
+          let target_t = dx.abs() * 0.3 + dy.abs() * 0.4 + 2.;
 
           let vx = dx / target_t;
           let vy = dy / target_t + G / 2. * target_t;
