@@ -486,9 +486,9 @@ impl<'a> Entity for Bunny<'a> {
           0 => {
             if dt == 50 {
               self.dialog = Some(Dialog::new(
-                (self.pos.0 + 7, self.pos.1),
+                (self.pos.0 - 2, self.pos.1),
                 "A hole?? Maybe there's a carrot in here!".to_string(),
-                false,
+                true,
               ));
             }
           }
