@@ -50,31 +50,6 @@ impl Basket {
   pub fn peach_at_mut(&mut self, idx: usize) -> &mut Peach {
     &mut self.peaches[idx]
   }
-
-  pub fn splode(&mut self) {
-    self.peaches.first_mut().unwrap().explode(vec![
-      ('H', (60, 5)),
-      ('a', (61, 5)),
-      ('p', (62, 5)),
-      ('p', (63, 5)),
-      ('y', (64, 5)),
-      ('B', (59, 7)),
-      ('i', (60, 7)),
-      ('r', (61, 7)),
-      ('t', (62, 7)),
-      ('h', (63, 7)),
-      ('d', (64, 7)),
-      ('a', (65, 7)),
-      ('y', (66, 7)),
-      ('E', (60, 9)),
-      ('u', (61, 9)),
-      ('g', (62, 9)),
-      ('e', (63, 9)),
-      ('n', (64, 9)),
-      ('i', (65, 9)),
-      ('a', (66, 9)),
-    ])
-  }
 }
 
 impl Entity for Basket {

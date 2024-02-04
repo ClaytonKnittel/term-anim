@@ -1,15 +1,13 @@
+use std::iter;
+
+use rand::Rng;
 use termion::color;
 
 use crate::{entity::Entity, util::Draw};
 
 const Z_IDX: i32 = 30;
+const DEBRIS_Z_IDX: i32 = 6;
 const G: f32 = -0.1;
-
-#[rustfmt::skip]
-const PEACH: [&str; 2] = [
-  r#" ,"#,
-  r#"(@"#,
-];
 
 #[derive(PartialEq, Eq)]
 enum PeachState {
@@ -22,6 +20,7 @@ enum PeachState {
   Explode {
     t: usize,
     target_letters: Vec<(char, (i32, i32))>,
+    rand_letters: Vec<(char, (i32, i32))>,
   },
 }
 
@@ -50,14 +49,29 @@ impl Peach {
       PeachState::Explode {
         t: _,
         target_letters: _,
+        rand_letters: _
       }
     )
   }
 
-  pub fn explode(&mut self, target_letters: Vec<(char, (i32, i32))>) {
+  pub fn explode<R: Rng>(&mut self, target_letters: Vec<(char, (i32, i32))>, rng: &mut R) {
+    const RADIUS: i32 = 70;
     self.state = PeachState::Explode {
       t: self.t,
       target_letters,
+      rand_letters: (0..200)
+        .map(|_| {
+          let mut dx = rng.gen_range(-RADIUS..=RADIUS);
+          let mut dy = rng.gen_range(-RADIUS..=RADIUS);
+          while dx * dx + dy * dy > (RADIUS * RADIUS) || self.x + dx < 0 || self.y + dy < 0 {
+            dx = rng.gen_range(-RADIUS..=RADIUS);
+            dy = rng.gen_range(-RADIUS..=RADIUS);
+          }
+
+          let letter = rng.gen_range('a'..='z');
+          (letter, (self.x + dx, self.y + dy))
+        })
+        .collect(),
     };
   }
 
@@ -88,8 +102,16 @@ impl Entity for Peach {
         ]
         .into_iter(),
       ),
-      PeachState::Explode { t, target_letters } => {
-        Box::new(target_letters.iter().map(move |(c, (x, y))| {
+      PeachState::Explode {
+        t,
+        target_letters,
+        rand_letters,
+      } => Box::new(
+        (target_letters
+          .iter()
+          .zip(iter::repeat(true))
+          .chain(rand_letters.iter().zip(iter::repeat(false))))
+        .map(move |((c, (x, y)), targeted)| {
           let dt = (self.t - t) as f32;
           let dx = (x - self.x) as f32;
           let dy = (y - self.y) as f32;
@@ -112,11 +134,13 @@ impl Entity for Peach {
           };
 
           (
-            Draw::new(*c).with_fg(self.color).with_z(Z_IDX),
+            Draw::new(*c)
+              .with_fg(self.color)
+              .with_z(DEBRIS_Z_IDX + if targeted { 1 } else { 0 }),
             (x_pos, y_pos),
           )
-        }))
-      }
+        }),
+      ),
     }
   }
 
@@ -146,6 +170,7 @@ impl Entity for Peach {
       | PeachState::Explode {
         t: _,
         target_letters: _,
+        rand_letters: _,
       } => {}
     }
   }
@@ -159,6 +184,7 @@ impl Entity for Peach {
       | PeachState::Explode {
         t: _,
         target_letters: _,
+        rand_letters: _,
       } => {}
     }
   }

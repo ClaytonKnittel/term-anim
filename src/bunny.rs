@@ -383,7 +383,10 @@ impl<'a> Entity for Bunny<'a> {
               .collides_with_front(self.basket.peach_at_mut(peach_idx).hitbox())
           {
             let letters = self.random_guaranteed_letters();
-            self.basket.peach_at_mut(peach_idx).explode(letters);
+            self
+              .basket
+              .peach_at_mut(peach_idx)
+              .explode(letters, self.rng);
           }
         }
       }
