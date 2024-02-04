@@ -2,7 +2,7 @@ use std::iter;
 
 use crate::{entity::Entity, util::Draw};
 
-const MAX_LINE_LEN: usize = 30;
+const MAX_LINE_LEN: usize = 40;
 const Z_IDX: i32 = 100;
 
 pub struct Dialog {
