@@ -2,6 +2,32 @@ use std::fmt::Display;
 
 use termion::color;
 
+const G: f32 = -0.1;
+
+pub fn explosion_path(dt: f32, target: (i32, i32), origin: (i32, i32)) -> (i32, i32) {
+  let dx = (target.0 - origin.0) as f32;
+  let dy = (target.1 - origin.1) as f32;
+  let target_t = dx.abs() * 0.3 + dy.abs() * 0.4 + 2.;
+
+  let vx = dx / target_t;
+  let vy = dy / target_t + G / 2. * target_t;
+  let x_pos = vx * dt;
+  let y_pos = vy * dt - G / 2. * (dt * dt);
+
+  let x_pos = if dt < target_t {
+    (x_pos as i32) + origin.0
+  } else {
+    target.0
+  };
+  let y_pos = if dt < target_t {
+    (y_pos as i32) + origin.1
+  } else {
+    target.1
+  };
+
+  (x_pos, y_pos)
+}
+
 #[derive(Clone)]
 pub struct Draw {
   item: char,

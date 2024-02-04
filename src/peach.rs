@@ -3,11 +3,13 @@ use std::iter;
 use rand::Rng;
 use termion::color;
 
-use crate::{entity::Entity, util::Draw};
+use crate::{
+  entity::Entity,
+  util::{explosion_path, Draw},
+};
 
 const Z_IDX: i32 = 30;
 const DEBRIS_Z_IDX: i32 = 6;
-const G: f32 = -0.1;
 
 #[derive(PartialEq, Eq)]
 enum PeachState {
@@ -112,32 +114,11 @@ impl Entity for Peach {
           .zip(iter::repeat(true))
           .chain(rand_letters.iter().zip(iter::repeat(false))))
         .map(move |((c, (x, y)), targeted)| {
-          let dt = (self.t - t) as f32;
-          let dx = (x - self.x) as f32;
-          let dy = (y - self.y) as f32;
-          let target_t = dx.abs() * 0.3 + dy.abs() * 0.4 + 2.;
-
-          let vx = dx / target_t;
-          let vy = dy / target_t + G / 2. * target_t;
-          let x_pos = vx * dt;
-          let y_pos = vy * dt - G / 2. * (dt * dt);
-
-          let x_pos = if dt < target_t {
-            (x_pos as i32) + self.x
-          } else {
-            *x
-          };
-          let y_pos = if dt < target_t {
-            (y_pos as i32) + self.y
-          } else {
-            *y
-          };
-
           (
             Draw::new(*c)
               .with_fg(self.color)
               .with_z(DEBRIS_Z_IDX + if targeted { 1 } else { 0 }),
-            (x_pos, y_pos),
+            explosion_path((self.t - t) as f32, (*x, *y), (self.x, self.y)),
           )
         }),
       ),
