@@ -1,8 +1,9 @@
 use termion::color;
 
-use crate::{dialog::Dialog, entity::Entity, util::Draw};
+use crate::{basket::Basket, dialog::Dialog, entity::Entity, util::Draw};
 
 const Z_IDX: i32 = 10;
+const STEP_PERIOD: usize = 10;
 
 enum BunnyState {
   Sleep,
@@ -17,25 +18,24 @@ enum Direction {
   Right,
 }
 
-enum BunnyIntent {
-  Idle,
-}
-
+#[derive(PartialEq, Eq)]
 enum BunnyStage {
   Sleep1,
   // Wake up, ask for help finding carrot.
   Speak1 { t: usize, dialog_idx: u32 },
   AwaitDecision1,
+  WalkToBasket { t: usize, init_pos: (i32, i32) },
+  AtBasket,
 }
 
 pub struct Bunny {
   state: BunnyState,
   stage: BunnyStage,
   direction: Direction,
-  intent: BunnyIntent,
   dialog: Option<Dialog>,
   pos: (i32, i32),
   t: usize,
+  basket: Basket,
 }
 
 impl Bunny {
@@ -44,10 +44,51 @@ impl Bunny {
       state: BunnyState::Sleep,
       stage: BunnyStage::Sleep1,
       direction: Direction::Right,
-      intent: BunnyIntent::Idle,
       dialog: None,
       pos,
       t: 0,
+      basket: Basket::new((9, 10)),
+    }
+  }
+
+  pub fn awaiting_decision1(&self) -> bool {
+    self.stage == BunnyStage::AwaitDecision1
+  }
+
+  fn dt_to_completion(&self, init_pos: (i32, i32), target_pos: (i32, i32)) -> usize {
+    let dx = target_pos.0 - init_pos.0;
+    let dy = target_pos.1 - init_pos.1;
+    STEP_PERIOD * 2 * (dx.unsigned_abs() as usize) * (dy.unsigned_abs() as usize)
+  }
+
+  fn interpolate_pos(&mut self, dt: usize, init_pos: (i32, i32), target_pos: (i32, i32)) {
+    if dt % STEP_PERIOD != 0 {
+      return;
+    }
+    let step_num = dt / STEP_PERIOD;
+
+    let dx = target_pos.0 - init_pos.0;
+    let dy = target_pos.1 - init_pos.1;
+    if step_num <= dx.unsigned_abs() as usize {
+      if dx < 0 {
+        self.direction = Direction::Left;
+      } else {
+        self.direction = Direction::Right;
+      }
+      if step_num % 2 == 0 {
+        self.state = if dx < 0 {
+          BunnyState::Walk1
+        } else {
+          BunnyState::Walk2
+        };
+      } else {
+        self.state = if dx < 0 {
+          BunnyState::Walk2
+        } else {
+          BunnyState::Walk1
+        };
+        self.pos = (init_pos.0 + step_num as i32 * dx.signum(), init_pos.1);
+      }
     }
   }
 }
@@ -143,23 +184,27 @@ impl Entity for Bunny {
       (BunnyState::Blink { t: _ }, Direction::Right) => &RIGHT_BLINK,
     };
 
-    let bunny_iter = bunny_str.iter().enumerate().flat_map(move |(y, row)| {
-      let y = y as i32 + self.pos.1;
+    let bunny_iter = bunny_str
+      .iter()
+      .enumerate()
+      .flat_map(move |(y, row)| {
+        let y = y as i32 + self.pos.1;
 
-      row.chars().enumerate().filter_map(move |(x, c)| {
-        let x = x as i32 + self.pos.0;
-        if c == ' ' {
-          return None;
-        }
+        row.chars().enumerate().filter_map(move |(x, c)| {
+          let x = x as i32 + self.pos.0;
+          if c == ' ' {
+            return None;
+          }
 
-        Some((
-          Draw::new(c)
-            .with_fg(color::AnsiValue::grayscale(22))
-            .with_z(Z_IDX),
-          (x, y),
-        ))
+          Some((
+            Draw::new(c)
+              .with_fg(color::AnsiValue::grayscale(22))
+              .with_z(Z_IDX),
+            (x, y),
+          ))
+        })
       })
-    });
+      .chain(self.basket.iterate_tiles());
 
     match &self.dialog {
       Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
@@ -217,6 +262,19 @@ impl Entity for Bunny {
           }
         }
       }
+      BunnyStage::WalkToBasket {
+        t: initial_t,
+        init_pos,
+      } => {
+        const TARGET: (i32, i32) = (22, 11);
+        let dt = t - initial_t;
+        if dt >= self.dt_to_completion(init_pos, TARGET) {
+          self.stage = BunnyStage::AtBasket;
+        } else {
+          self.interpolate_pos(t - initial_t, init_pos, TARGET);
+        }
+      }
+      BunnyStage::AtBasket => {}
     }
   }
 
@@ -254,7 +312,15 @@ impl Entity for Bunny {
         if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
         }
+        if self.basket.contains_click((x, y)) {
+          self.stage = BunnyStage::WalkToBasket {
+            t: self.t,
+            init_pos: self.pos,
+          };
+        }
       }
+      BunnyStage::WalkToBasket { t: _, init_pos: _ } => {}
+      BunnyStage::AtBasket => {}
     }
   }
 

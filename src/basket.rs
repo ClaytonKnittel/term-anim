@@ -22,6 +22,12 @@ impl Basket {
   pub fn new(pos: (i32, i32)) -> Self {
     Self { pos }
   }
+
+  pub fn contains_click(&self, pos: (i32, i32)) -> bool {
+    let dx = pos.0 - self.pos.0;
+    let dy = pos.1 - self.pos.1;
+    (0..12).contains(&dx) && (0..6).contains(&dy) && ((dx != 0 && dx != 11) || dy != 0)
+  }
 }
 
 impl Entity for Basket {
