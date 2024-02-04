@@ -317,6 +317,7 @@ impl Entity for Bunny {
             t: self.t,
             init_pos: self.pos,
           };
+          self.dialog = None;
         }
       }
       BunnyStage::WalkToBasket { t: _, init_pos: _ } => {}
