@@ -1,6 +1,6 @@
 use termion::color;
 
-use crate::{basket::Basket, dialog::Dialog, entity::Entity, util::Draw};
+use crate::{basket::Basket, dialog::Dialog, entity::Entity, train_scene::TrainScene, util::Draw};
 
 const Z_IDX: i32 = 10;
 const STEP_PERIOD: usize = 10;
@@ -26,6 +26,7 @@ enum BunnyStage {
   AwaitDecision1,
   WalkToBasket { t: usize, init_pos: (i32, i32) },
   BasketDialog { t: usize, dialog_idx: u32 },
+  AwaitPeachDestruction,
 }
 
 pub struct Bunny {
@@ -36,10 +37,11 @@ pub struct Bunny {
   pos: (i32, i32),
   t: usize,
   basket: Basket,
+  train_scene: TrainScene,
 }
 
 impl Bunny {
-  pub fn new(pos: (i32, i32)) -> Self {
+  pub fn new(pos: (i32, i32), width: u32, height: u32) -> Self {
     Self {
       state: BunnyState::Sleep,
       stage: BunnyStage::Sleep1,
@@ -48,11 +50,8 @@ impl Bunny {
       pos,
       t: 0,
       basket: Basket::new((9, 10)),
+      train_scene: TrainScene::new(width, height),
     }
-  }
-
-  pub fn awaiting_decision1(&self) -> bool {
-    self.stage == BunnyStage::AwaitDecision1
   }
 
   fn dt_to_completion(&self, init_pos: (i32, i32), target_pos: (i32, i32)) -> usize {
@@ -213,7 +212,8 @@ impl Entity for Bunny {
           ))
         })
       })
-      .chain(self.basket.iterate_tiles());
+      .chain(self.basket.iterate_tiles())
+      .chain(self.train_scene.iterate_tiles());
 
     match &self.dialog {
       Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
@@ -222,6 +222,7 @@ impl Entity for Bunny {
   }
 
   fn tick(&mut self, t: usize) {
+    self.train_scene.tick(t);
     self.t = t;
 
     match self.stage {
@@ -263,7 +264,7 @@ impl Entity for Bunny {
           _ => unreachable!(),
         }
       }
-      BunnyStage::AwaitDecision1 => {
+      BunnyStage::AwaitDecision1 | BunnyStage::AwaitPeachDestruction => {
         if let BunnyState::Blink { t: initial_t } = self.state {
           let dt = t - initial_t;
           if dt == 6 {
@@ -309,6 +310,16 @@ impl Entity for Bunny {
               ));
             }
           }
+          2 => {
+            if dt == 10 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 7, self.pos.1),
+                "Hey, are those train tracks? Maybe if the peaches collide \
+                 with the nose of a passing train, they will open!"
+                  .to_string(),
+              ));
+            }
+          }
           _ => unreachable!(),
         }
       }
@@ -316,11 +327,7 @@ impl Entity for Bunny {
   }
 
   fn click(&mut self, x: u32, y: u32) {
-    if let BunnyStage::BasketDialog {
-      t: _,
-      dialog_idx: 1,
-    } = self.stage
-    {
+    if let BunnyStage::AwaitPeachDestruction = self.stage {
       self.basket.click(x, y);
     }
 
@@ -369,14 +376,25 @@ impl Entity for Bunny {
       BunnyStage::BasketDialog { t, dialog_idx } => {
         if match dialog_idx {
           0 => self.t >= t + 50,
-          1 => false,
+          1 => self.t >= t + 10,
+          2 => self.t >= t + 10,
           _ => unreachable!(),
         } {
-          self.stage = BunnyStage::BasketDialog {
-            t: self.t,
-            dialog_idx: dialog_idx + 1,
-          };
+          if dialog_idx == 2 {
+            self.stage = BunnyStage::AwaitPeachDestruction;
+            self.train_scene.unfreeze();
+          } else {
+            self.stage = BunnyStage::BasketDialog {
+              t: self.t,
+              dialog_idx: dialog_idx + 1,
+            };
+          }
           self.dialog = None;
+        }
+      }
+      BunnyStage::AwaitPeachDestruction => {
+        if clicked_bunny {
+          self.state = BunnyState::Blink { t: self.t };
         }
       }
     }
