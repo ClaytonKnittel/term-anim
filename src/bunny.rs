@@ -51,7 +51,9 @@ enum BunnyStage {
   AwaitDecision1,
   WalkToBasket { t: usize, init_pos: (i32, i32) },
   BasketDialog { t: usize, dialog_idx: u32 },
-  AwaitPeachDestruction,
+  AwaitPeachDestruction { t: usize, rem_peaches: u32 },
+  PeachesHaveNoCarrots { t: usize, dialog_idx: u32 },
+  AwaitDecisionHole,
 }
 
 pub struct Bunny<'a> {
@@ -367,12 +369,32 @@ impl<'a> Entity for Bunny<'a> {
           _ => unreachable!(),
         }
       }
-      BunnyStage::AwaitPeachDestruction => {
+      BunnyStage::AwaitPeachDestruction {
+        t: peach_t,
+        rem_peaches,
+      } => {
         if let BunnyState::Blink { t: initial_t } = self.state {
           let dt = t - initial_t;
           if dt == 6 {
             self.state = BunnyState::Walk1;
           }
+        }
+        let peaches = self
+          .basket
+          .peaches_mut()
+          .filter(|peach| !peach.exploded())
+          .count();
+        if peaches as u32 != rem_peaches {
+          self.stage = BunnyStage::AwaitPeachDestruction {
+            t: self.t,
+            rem_peaches: peaches as u32,
+          };
+        }
+        if rem_peaches == 0 && t == peach_t + 100 {
+          self.stage = BunnyStage::PeachesHaveNoCarrots {
+            t: self.t,
+            dialog_idx: 0,
+          };
         }
 
         for peach_idx in 0..self.basket.num_peaches() {
@@ -390,11 +412,49 @@ impl<'a> Entity for Bunny<'a> {
           }
         }
       }
+      BunnyStage::PeachesHaveNoCarrots {
+        t: initial_t,
+        dialog_idx,
+      } => {
+        let dt = t - initial_t;
+
+        match dialog_idx {
+          0 => {
+            if dt == 1 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 7, self.pos.1),
+                "Whelp, those peaches didn't have any carrots inside...".to_string(),
+              ));
+            }
+          }
+          1 => {
+            if dt == 10 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 7, self.pos.1),
+                "Could there be a carrot hidden somewhere else?".to_string(),
+              ));
+            }
+          }
+          _ => unreachable!(),
+        }
+      }
+      BunnyStage::AwaitDecisionHole => {
+        if let BunnyState::Blink { t: initial_t } = self.state {
+          let dt = t - initial_t;
+          if dt == 6 {
+            self.state = BunnyState::Walk1;
+          }
+        }
+      }
     }
   }
 
   fn click(&mut self, x: u32, y: u32) {
-    if let BunnyStage::AwaitPeachDestruction = self.stage {
+    if let BunnyStage::AwaitPeachDestruction {
+      t: _,
+      rem_peaches: _,
+    } = self.stage
+    {
       self.basket.click(x, y);
     }
 
@@ -448,7 +508,10 @@ impl<'a> Entity for Bunny<'a> {
           _ => unreachable!(),
         } {
           if dialog_idx == 2 {
-            self.stage = BunnyStage::AwaitPeachDestruction;
+            self.stage = BunnyStage::AwaitPeachDestruction {
+              t: self.t,
+              rem_peaches: 4,
+            };
             self.train_scene.unfreeze();
           } else {
             self.stage = BunnyStage::BasketDialog {
@@ -459,10 +522,36 @@ impl<'a> Entity for Bunny<'a> {
           self.dialog = None;
         }
       }
-      BunnyStage::AwaitPeachDestruction => {
+      BunnyStage::AwaitPeachDestruction {
+        t: _,
+        rem_peaches: _,
+      } => {
         if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
         }
+      }
+      BunnyStage::PeachesHaveNoCarrots { t, dialog_idx } => {
+        if match dialog_idx {
+          0 => self.t > t,
+          1 => self.t >= t + 10,
+          _ => unreachable!(),
+        } {
+          if dialog_idx == 1 {
+            self.stage = BunnyStage::AwaitDecisionHole;
+          } else {
+            self.stage = BunnyStage::PeachesHaveNoCarrots {
+              t: self.t,
+              dialog_idx: dialog_idx + 1,
+            };
+          }
+          self.dialog = None;
+        }
+      }
+      BunnyStage::AwaitDecisionHole => {
+        if clicked_bunny {
+          self.state = BunnyState::Blink { t: self.t };
+        }
+        // TODO
       }
     }
   }
