@@ -24,7 +24,7 @@ enum BunnyIntent {
 enum BunnyStage {
   Sleep1,
   // Wake up, ask for help finding carrot.
-  Speak1 { t: usize },
+  Speak1 { t: usize, dialog_idx: u32 },
   AwaitDecision1,
 }
 
@@ -49,23 +49,6 @@ impl Bunny {
       pos,
       t: 0,
     }
-  }
-
-  pub fn shift(&mut self) {
-    match self.intent {
-      BunnyIntent::Idle => {}
-    }
-    // match self.state {
-    //   BunnyState::Wake => {}
-    //   BunnyState::Sleep => {}
-    //   BunnyState::Walk1 => {
-    //     self.state = BunnyState::Walk2;
-    //     self.pos.0 += 1;
-    //   }
-    //   BunnyState::Walk2 => {
-    //     self.state = BunnyState::Walk1;
-    //   }
-    // };
   }
 }
 
@@ -189,33 +172,41 @@ impl Entity for Bunny {
 
     match self.stage {
       BunnyStage::Sleep1 => {}
-      BunnyStage::Speak1 { t: initial_t } => {
+      BunnyStage::Speak1 {
+        t: initial_t,
+        dialog_idx,
+      } => {
         let dt = t - initial_t;
 
-        if dt == 50 {
-          self.dialog = Some(Dialog::new(
-            (self.pos.0 + 5, self.pos.1),
-            "Oh! Hello there!".to_string(),
-          ));
-        } else if dt == 150 {
-          self.dialog = None;
-        } else if dt == 200 {
-          self.state = BunnyState::Walk1;
-        } else if dt == 250 {
-          self.dialog = Some(Dialog::new(
-            (self.pos.0 + 6, self.pos.1),
-            "I am so hungry, and my favorite food is carrots.".to_string(),
-          ));
-        } else if dt == 380 {
-          self.dialog = None;
-        } else if dt == 400 {
-          self.dialog = Some(Dialog::new(
-            (self.pos.0 + 6, self.pos.1),
-            "Would you help me find a carrot?".to_string(),
-          ));
-        } else if dt == 500 {
-          self.dialog = None;
-          self.stage = BunnyStage::AwaitDecision1;
+        match dialog_idx {
+          0 => {
+            if dt == 50 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 5, self.pos.1),
+                "Oh! Hello there!".to_string(),
+              ));
+            }
+          }
+          1 => {
+            if dt == 50 {
+              self.state = BunnyState::Walk1;
+            } else if dt == 100 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 6, self.pos.1),
+                "I am so hungry, and my favorite food is carrots.".to_string(),
+              ));
+            }
+          }
+          2 => {
+            if dt == 10 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 6, self.pos.1),
+                "Would you help me find a carrot?".to_string(),
+              ));
+              self.stage = BunnyStage::AwaitDecision1;
+            }
+          }
+          _ => unreachable!(),
         }
       }
       BunnyStage::AwaitDecision1 => {
@@ -232,14 +223,35 @@ impl Entity for Bunny {
   fn click(&mut self, x: u32, y: u32) {
     let x = x as i32;
     let y = y as i32;
-    if self.pos.0 <= x && x < self.pos.0 + 8 && self.pos.1 <= y && y < self.pos.1 + 4 {
-      match self.stage {
-        BunnyStage::Sleep1 => {
-          self.stage = BunnyStage::Speak1 { t: self.t };
+    let clicked_bunny =
+      self.pos.0 <= x && x < self.pos.0 + 8 && self.pos.1 <= y && y < self.pos.1 + 4;
+
+    match self.stage {
+      BunnyStage::Sleep1 => {
+        if clicked_bunny {
+          self.stage = BunnyStage::Speak1 {
+            t: self.t,
+            dialog_idx: 0,
+          };
           self.state = BunnyState::Wake;
         }
-        BunnyStage::Speak1 { t: _ } => {}
-        BunnyStage::AwaitDecision1 => {
+      }
+      BunnyStage::Speak1 { t, dialog_idx } => {
+        if match dialog_idx {
+          0 => self.t >= t + 50,
+          1 => self.t >= t + 100,
+          2 => false,
+          _ => unreachable!(),
+        } {
+          self.stage = BunnyStage::Speak1 {
+            t: self.t,
+            dialog_idx: dialog_idx + 1,
+          };
+          self.dialog = None;
+        }
+      }
+      BunnyStage::AwaitDecision1 => {
+        if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
         }
       }
