@@ -3,7 +3,8 @@ use termion::color;
 use crate::{basket::Basket, dialog::Dialog, entity::Entity, train_scene::TrainScene, util::Draw};
 
 const Z_IDX: i32 = 10;
-const STEP_PERIOD: usize = 10;
+// const STEP_PERIOD: usize = 10;
+const STEP_PERIOD: usize = 1;
 
 enum BunnyState {
   Sleep,
@@ -223,6 +224,7 @@ impl Entity for Bunny {
 
   fn tick(&mut self, t: usize) {
     self.train_scene.tick(t);
+    self.basket.tick(t);
     self.t = t;
 
     match self.stage {
@@ -395,6 +397,7 @@ impl Entity for Bunny {
       BunnyStage::AwaitPeachDestruction => {
         if clicked_bunny {
           self.state = BunnyState::Blink { t: self.t };
+          self.basket.splode();
         }
       }
     }

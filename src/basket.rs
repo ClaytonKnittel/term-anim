@@ -38,6 +38,14 @@ impl Basket {
     let dy = pos.1 - self.pos.1;
     (0..12).contains(&dx) && (0..6).contains(&dy) && ((dx != 0 && dx != 11) || dy != 0)
   }
+
+  pub fn splode(&mut self) {
+    self
+      .peaches
+      .first_mut()
+      .unwrap()
+      .explode(vec![('H', (60, 5)), ('p', (63, 5)), ('E', (59, 10))])
+  }
 }
 
 impl Entity for Basket {
@@ -67,7 +75,11 @@ impl Entity for Basket {
     )
   }
 
-  fn tick(&mut self, _t: usize) {}
+  fn tick(&mut self, t: usize) {
+    for peach in self.peaches.iter_mut() {
+      peach.tick(t);
+    }
+  }
 
   fn click(&mut self, x: u32, y: u32) {
     for peach in self.peaches.iter_mut() {
