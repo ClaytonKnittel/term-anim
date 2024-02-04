@@ -21,6 +21,7 @@ pub struct Hole {
   pos: (i32, i32),
   queued_dirt: Vec<(bool, char, (i32, i32))>,
   flung_dirt: Vec<(usize, bool, char, (i32, i32))>,
+  kazoo: Option<usize>,
 }
 
 impl Hole {
@@ -30,6 +31,7 @@ impl Hole {
       pos,
       queued_dirt: Vec::new(),
       flung_dirt: Vec::new(),
+      kazoo: None,
     }
   }
 
@@ -49,7 +51,10 @@ impl Hole {
         self.flung_dirt.push((self.t, dirt.0, dirt.1, dirt.2));
         true
       }
-      None => false,
+      None => {
+        self.kazoo = Some(self.t);
+        false
+      }
     }
   }
 }
@@ -88,7 +93,23 @@ impl Entity for Hole {
               (self.pos.0 + 2, self.pos.1 + 2),
             ),
           )
-        })),
+        }))
+        .chain(match self.kazoo {
+          Some(kazoo_t) => Box::new(
+            [(
+              Draw::new('/')
+                .with_fg(color::AnsiValue::grayscale(23))
+                .with_z(Z_IDX),
+              explosion_path(
+                (self.t - kazoo_t) as f32,
+                (24, 5),
+                (self.pos.0 + 2, self.pos.1 + 2),
+              ),
+            )]
+            .into_iter(),
+          ) as Box<dyn Iterator<Item = (Draw, (i32, i32))>>,
+          None => Box::new([].into_iter()),
+        }),
     )
   }
 
