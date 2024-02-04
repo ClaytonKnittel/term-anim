@@ -22,14 +22,16 @@ enum PeachState {
 pub struct Peach {
   x: i32,
   y: i32,
+  color: color::AnsiValue,
   state: PeachState,
 }
 
 impl Peach {
-  pub fn new(x: i32, y: i32) -> Self {
+  pub fn new(x: i32, y: i32, color: color::AnsiValue) -> Self {
     Self {
       x,
       y,
+      color,
       state: PeachState::Idle,
     }
   }
@@ -46,15 +48,11 @@ impl Entity for Peach {
           (self.x + 1, self.y),
         ),
         (
-          Draw::new('(')
-            .with_fg(color::AnsiValue::rgb(5, 0, 1))
-            .with_z(Z_IDX),
+          Draw::new('(').with_fg(self.color).with_z(Z_IDX),
           (self.x, self.y + 1),
         ),
         (
-          Draw::new('@')
-            .with_fg(color::AnsiValue::rgb(5, 0, 1))
-            .with_z(Z_IDX),
+          Draw::new('@').with_fg(self.color).with_z(Z_IDX),
           (self.x + 1, self.y + 1),
         ),
       ]
@@ -67,7 +65,7 @@ impl Entity for Peach {
   fn click(&mut self, x: u32, y: u32) {
     let dx = self.x - x as i32;
     let dy = self.y - y as i32;
-    if (-2..=1).contains(&dx) && (-2..=1).contains(&dy) && (dx != 1 || dy != 1) {
+    if (-1..=0).contains(&dx) && (-1..=0).contains(&dy) && (dx != 0 || dy != 0) {
       self.state = PeachState::Held { dx, dy };
     }
   }

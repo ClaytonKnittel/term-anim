@@ -1,14 +1,15 @@
 use termion::color;
 
-use crate::{entity::Entity, util::Draw};
+use crate::{entity::Entity, peach::Peach, util::Draw};
 
-const Z_IDX: i32 = 40;
+const Z_IDX: i32 = 25;
+const BG_Z_IDX: i32 = 20;
 
 #[rustfmt::skip]
 const BASKET: [&str; 6] = [
   r#"   ======   "#,
-  r#" // (@   \\ "#,
-  r#"||(@ (@ (@||"#,
+  r#" //      \\ "#,
+  r#"||        ||"#,
   r#"============"#,
   r#" \\##||##// "#,
   r#"   -~~~~-   "#,
@@ -16,11 +17,20 @@ const BASKET: [&str; 6] = [
 
 pub struct Basket {
   pos: (i32, i32),
+  peaches: Vec<Peach>,
 }
 
 impl Basket {
   pub fn new(pos: (i32, i32)) -> Self {
-    Self { pos }
+    Self {
+      pos,
+      peaches: vec![
+        Peach::new(pos.0 + 2, pos.1 + 1, color::AnsiValue::rgb(5, 0, 0)),
+        Peach::new(pos.0 + 5, pos.1 + 1, color::AnsiValue::rgb(5, 0, 1)),
+        Peach::new(pos.0 + 8, pos.1 + 1, color::AnsiValue::rgb(4, 0, 0)),
+        Peach::new(pos.0 + 4, pos.1, color::AnsiValue::rgb(5, 1, 0)),
+      ],
+    }
   }
 
   pub fn contains_click(&self, pos: (i32, i32)) -> bool {
@@ -32,35 +42,48 @@ impl Basket {
 
 impl Entity for Basket {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (crate::util::Draw, (i32, i32))> + '_> {
-    Box::new(BASKET.iter().enumerate().flat_map(move |(dy, row)| {
-      let y = dy as i32 + self.pos.1;
+    Box::new(
+      BASKET
+        .iter()
+        .enumerate()
+        .flat_map(move |(dy, row)| {
+          let y = dy as i32 + self.pos.1;
 
-      row.chars().enumerate().filter_map(move |(dx, c)| {
-        let x = dx as i32 + self.pos.0;
-        if c == ' ' && !(1..=2).contains(&dy) {
-          return None;
-        }
+          row.chars().enumerate().filter_map(move |(dx, c)| {
+            let x = dx as i32 + self.pos.0;
+            if c == ' ' && !(1..=2).contains(&dy) {
+              return None;
+            }
 
-        let color = if dy == 1 && (4..=5).contains(&dx) {
-          color::AnsiValue::rgb(5, 0, 0)
-        } else if dy == 2 && (2..=3).contains(&dx) {
-          color::AnsiValue::rgb(5, 0, 1)
-        } else if dy == 2 && (5..=6).contains(&dx) {
-          color::AnsiValue::rgb(4, 0, 0)
-        } else if dy == 2 && (8..=9).contains(&dx) {
-          color::AnsiValue::rgb(5, 1, 0)
-        } else {
-          color::AnsiValue::rgb(2, 1, 0)
-        };
-
-        Some((Draw::new(c).with_fg(color).with_z(Z_IDX), (x, y)))
-      })
-    }))
+            Some((
+              Draw::new(c)
+                .with_fg(color::AnsiValue::rgb(2, 1, 0))
+                .with_z(if c == ' ' { BG_Z_IDX } else { Z_IDX }),
+              (x, y),
+            ))
+          })
+        })
+        .chain(self.peaches.iter().flat_map(|peach| peach.iterate_tiles())),
+    )
   }
 
   fn tick(&mut self, _t: usize) {}
 
-  fn click(&mut self, _x: u32, _y: u32) {}
-  fn drag(&mut self, _x: u32, _y: u32) {}
-  fn release(&mut self, _x: u32, _y: u32) {}
+  fn click(&mut self, x: u32, y: u32) {
+    for peach in self.peaches.iter_mut() {
+      peach.click(x, y);
+    }
+  }
+
+  fn drag(&mut self, x: u32, y: u32) {
+    for peach in self.peaches.iter_mut() {
+      peach.drag(x, y);
+    }
+  }
+
+  fn release(&mut self, x: u32, y: u32) {
+    for peach in self.peaches.iter_mut() {
+      peach.release(x, y);
+    }
+  }
 }

@@ -316,6 +316,14 @@ impl Entity for Bunny {
   }
 
   fn click(&mut self, x: u32, y: u32) {
+    if let BunnyStage::BasketDialog {
+      t: _,
+      dialog_idx: 1,
+    } = self.stage
+    {
+      self.basket.click(x, y);
+    }
+
     let x = x as i32;
     let y = y as i32;
     let clicked_bunny =
@@ -374,6 +382,11 @@ impl Entity for Bunny {
     }
   }
 
-  fn drag(&mut self, _x: u32, _y: u32) {}
-  fn release(&mut self, _x: u32, _y: u32) {}
+  fn drag(&mut self, x: u32, y: u32) {
+    self.basket.drag(x, y);
+  }
+
+  fn release(&mut self, x: u32, y: u32) {
+    self.basket.release(x, y);
+  }
 }
