@@ -51,6 +51,7 @@ enum BunnyStage {
   // Wake up, ask for help finding carrot.
   Speak1 { t: usize, dialog_idx: u32 },
   AwaitDecision1,
+  AwaitDecisionBasket,
   WalkToBasket { t: usize, init_pos: (i32, i32) },
   BasketDialog { t: usize, dialog_idx: u32 },
   AwaitPeachDestruction { t: usize, rem_peaches: u32 },
@@ -71,6 +72,7 @@ pub struct Bunny<'a> {
   basket: Basket,
   train_scene: TrainScene,
   hole: Hole,
+  completed_activities: u32,
   unused_letters: Vec<usize>,
   rng: &'a mut StdRng,
 }
@@ -87,6 +89,7 @@ impl<'a> Bunny<'a> {
       basket: Basket::new((9, 10)),
       train_scene: TrainScene::new(width, height),
       hole: Hole::new((102, 12)),
+      completed_activities: 0,
       unused_letters: (0..20).collect(),
       rng,
     }
@@ -330,6 +333,14 @@ impl<'a> Entity for Bunny<'a> {
           }
         }
       }
+      BunnyStage::AwaitDecisionBasket => {
+        if let BunnyState::Blink { t: initial_t } = self.state {
+          let dt = t - initial_t;
+          if dt == 6 {
+            self.state = BunnyState::Walk1;
+          }
+        }
+      }
       BunnyStage::WalkToBasket {
         t: initial_t,
         init_pos,
@@ -411,6 +422,7 @@ impl<'a> Entity for Bunny<'a> {
             dialog_idx: 0,
           };
           self.train_scene.freeze();
+          self.completed_activities += 1;
         }
 
         for peach_idx in 0..self.basket.num_peaches() {
@@ -558,6 +570,25 @@ impl<'a> Entity for Bunny<'a> {
           };
           self.dialog = None;
         }
+        if self.hole.contains_click((x, y)) {
+          self.stage = BunnyStage::WalkToHole {
+            t: self.t,
+            init_pos: self.pos,
+          };
+          self.dialog = None;
+        }
+      }
+      BunnyStage::AwaitDecisionBasket => {
+        if clicked_bunny {
+          self.state = BunnyState::Blink { t: self.t };
+        }
+        if self.basket.contains_click((x, y)) {
+          self.stage = BunnyStage::WalkToBasket {
+            t: self.t,
+            init_pos: self.pos,
+          };
+          self.dialog = None;
+        }
       }
       BunnyStage::WalkToBasket { t: _, init_pos: _ } => {}
       BunnyStage::BasketDialog { t, dialog_idx } => {
@@ -597,7 +628,11 @@ impl<'a> Entity for Bunny<'a> {
           _ => unreachable!(),
         } {
           if dialog_idx == 1 {
-            self.stage = BunnyStage::AwaitDecisionHole;
+            if self.completed_activities == 2 {
+              // TODO
+            } else {
+              self.stage = BunnyStage::AwaitDecisionHole;
+            }
           } else {
             self.stage = BunnyStage::PeachesHaveNoCarrots {
               t: self.t,
