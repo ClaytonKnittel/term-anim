@@ -63,6 +63,7 @@ enum BunnyStage {
   HoleDialog { t: usize, dialog_idx: u32 },
   Dig,
   HoleHasNoCarrots { t: usize, dialog_idx: u32 },
+  WalkToKazoo { t: usize, init_pos: (i32, i32) },
 }
 
 pub struct Bunny<'a> {
@@ -461,11 +462,19 @@ impl<'a> Entity for Bunny<'a> {
           }
           1 => {
             if dt == 10 {
-              self.dialog = Some(Dialog::new(
-                (self.pos.0 + 7, self.pos.1),
-                "Could there be a carrot hidden somewhere else?".to_string(),
-                false,
-              ));
+              if self.completed_activities == 2 {
+                self.dialog = Some(Dialog::new(
+                  (self.pos.0 + 7, self.pos.1),
+                  "Maybe if I go play that kazoo, I will find a carrot.".to_string(),
+                  false,
+                ));
+              } else {
+                self.dialog = Some(Dialog::new(
+                  (self.pos.0 + 7, self.pos.1),
+                  "Could there be a carrot hidden somewhere else?".to_string(),
+                  false,
+                ));
+              }
             }
           }
           _ => unreachable!(),
@@ -532,21 +541,44 @@ impl<'a> Entity for Bunny<'a> {
             if dt == 50 {
               self.dialog = Some(Dialog::new(
                 (self.pos.0 - 2, self.pos.1),
-                "Whelp, that hole didn't seem to have any carrots, but I think I saw a kazoo fly out...".to_string(),
+                "Whelp, that hole didn't seem to have any carrots, but I think \
+                 I saw a red kazoo fly out..."
+                  .to_string(),
                 true,
               ));
             }
           }
           1 => {
             if dt == 10 {
-              self.dialog = Some(Dialog::new(
-                (self.pos.0 - 2, self.pos.1),
-                "Could there be a carrot hidden somewhere else?".to_string(),
-                true,
-              ));
+              if self.completed_activities == 2 {
+                self.dialog = Some(Dialog::new(
+                  (self.pos.0 - 2, self.pos.1),
+                  "Maybe if I go play that kazoo, I will find a carrot.".to_string(),
+                  true,
+                ));
+              } else {
+                self.dialog = Some(Dialog::new(
+                  (self.pos.0 - 2, self.pos.1),
+                  "Could there be a carrot hidden somewhere else?".to_string(),
+                  true,
+                ));
+              }
             }
           }
           _ => unreachable!(),
+        }
+      }
+      BunnyStage::WalkToKazoo {
+        t: initial_t,
+        init_pos,
+      } => {
+        const TARGET: (i32, i32) = (26, 4);
+        let dt = t - initial_t;
+        if dt > self.dt_to_completion(init_pos, TARGET) {
+          self.state = BunnyState::Walk1;
+          self.direction = Direction::Left;
+        } else {
+          self.interpolate_pos(t - initial_t, init_pos, TARGET);
         }
       }
     }
@@ -660,7 +692,10 @@ impl<'a> Entity for Bunny<'a> {
         } {
           if dialog_idx == 1 {
             if self.completed_activities == 2 {
-              // TODO
+              self.stage = BunnyStage::WalkToKazoo {
+                t: self.t,
+                init_pos: self.pos,
+              };
             } else {
               self.stage = BunnyStage::AwaitDecisionHole;
             }
@@ -735,7 +770,10 @@ impl<'a> Entity for Bunny<'a> {
         } {
           if dialog_idx == 1 {
             if self.completed_activities == 2 {
-              // TODO
+              self.stage = BunnyStage::WalkToKazoo {
+                t: self.t,
+                init_pos: self.pos,
+              };
             } else {
               self.stage = BunnyStage::AwaitDecisionBasket;
             }
@@ -748,6 +786,7 @@ impl<'a> Entity for Bunny<'a> {
           self.dialog = None;
         }
       }
+      BunnyStage::WalkToKazoo { t: _, init_pos: _ } => {}
     }
   }
 

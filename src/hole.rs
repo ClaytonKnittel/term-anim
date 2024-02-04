@@ -98,7 +98,7 @@ impl Entity for Hole {
           Some(kazoo_t) => Box::new(
             [(
               Draw::new('/')
-                .with_fg(color::AnsiValue::grayscale(23))
+                .with_fg(color::AnsiValue::rgb(4, 0, 0))
                 .with_z(Z_IDX),
               explosion_path(
                 (self.t - kazoo_t) as f32,
