@@ -123,3 +123,18 @@ impl Display for Draw {
     write!(f, "{}{}{}{}", style::Reset, italic_str, fg_str, self.item)
   }
 }
+
+impl PartialEq for Draw {
+  fn eq(&self, other: &Self) -> bool {
+    self.item == other.item
+      && self.z_idx == other.z_idx
+      && self.italic == other.italic
+      && match (self.fg_color, other.fg_color) {
+        (Some(color::AnsiValue(c1)), Some(color::AnsiValue(c2))) => c1 == c2,
+        (None, None) => true,
+        _ => false,
+      }
+  }
+}
+
+impl Eq for Draw {}

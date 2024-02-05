@@ -8,6 +8,7 @@ pub struct Window<W: Write> {
   width: u32,
   height: u32,
   canvas: Vec<Option<Draw>>,
+  prev_canvas: Vec<Option<Draw>>,
 }
 
 impl<W: Write> Window<W> {
@@ -17,6 +18,7 @@ impl<W: Write> Window<W> {
       width,
       height,
       canvas: (0..(width * height)).map(|_| None).collect(),
+      prev_canvas: (0..(width * height)).map(|_| None).collect(),
     };
     s.allocate().expect("Failed to initialize window");
     s
@@ -28,6 +30,10 @@ impl<W: Write> Window<W> {
 
   pub fn height(&self) -> u32 {
     self.height
+  }
+
+  fn idx_to_pos(&self, idx: usize) -> (u32, u32) {
+    (idx as u32 % self.width, idx as u32 / self.width)
   }
 
   fn idx(&self, x: u32, y: u32) -> usize {
@@ -48,6 +54,7 @@ impl<W: Write> Window<W> {
   }
 
   pub fn reset(&mut self) {
+    std::mem::swap(&mut self.prev_canvas, &mut self.canvas);
     self.canvas = (0..(self.width * self.height)).map(|_| None).collect();
   }
 
@@ -65,6 +72,28 @@ impl<W: Write> Window<W> {
   }
 
   pub fn render(&mut self) -> std::io::Result<()> {
+    let ((min_x, max_x), (min_y, max_y)) = self
+      .canvas
+      .iter()
+      .zip(self.prev_canvas.iter())
+      .enumerate()
+      .fold(
+        ((10000, 0), (10000, 0)),
+        |((min_x, max_x), (min_y, max_y)), (idx, (d1, d2))| {
+          if d1 != d2 {
+            let (x, y) = self.idx_to_pos(idx);
+            ((min_x.min(x), max_x.max(x)), (min_y.min(y), max_y.max(y)))
+          } else {
+            ((min_x, max_x), (min_y, max_y))
+          }
+        },
+      );
+
+    // Don't render if no change.
+    if max_x < min_x {
+      return Ok(());
+    }
+
     write!(self.stdout, "{}", cursor::Goto(1, 1))?;
     for y in 0..self.height {
       for x in 0..self.width {
@@ -81,6 +110,6 @@ impl<W: Write> Window<W> {
         cursor::Down(1)
       )?;
     }
-    Ok(())
+    self.stdout.flush()
   }
 }

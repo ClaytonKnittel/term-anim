@@ -30,11 +30,11 @@ use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
 
 fn main() {
-  // let guard = pprof::ProfilerGuardBuilder::default()
-  //   .frequency(1000)
-  //   .blocklist(&["libc", "libgcc", "pthread", "vdso"])
-  //   .build()
-  //   .unwrap();
+  let guard = pprof::ProfilerGuardBuilder::default()
+    .frequency(1000)
+    .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+    .build()
+    .unwrap();
 
   let stdout = HideCursor::from(MouseTerminal::from(
     std::io::stdout().lock().into_raw_mode().unwrap(),
@@ -84,8 +84,8 @@ fn main() {
     std::thread::sleep(sleep_duration);
   }
 
-  // if let Ok(report) = guard.report().build() {
-  //   let file = std::fs::File::create("prof.svg").unwrap();
-  //   report.flamegraph(file).unwrap();
-  // };
+  if let Ok(report) = guard.report().build() {
+    let file = std::fs::File::create("prof.svg").unwrap();
+    report.flamegraph(file).unwrap();
+  };
 }
