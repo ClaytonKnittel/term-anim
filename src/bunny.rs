@@ -659,9 +659,9 @@ impl<'a> Entity for Bunny<'a> {
           self.carrot.appear();
         } else if dt == 150 {
           self.state = BunnyState::Walk1;
-        } else if dt == 240 {
+        } else if dt == 265 {
           self.dialog = None;
-        } else if dt == 250 {
+        } else if dt == 275 {
           self.dialog = Some(Dialog::new(
             (self.pos.0 + 7, self.pos.1),
             "Oh, what's that?".to_string(),
@@ -941,7 +941,7 @@ impl<'a> Entity for Bunny<'a> {
       BunnyStage::WalkToKazoo { t: _, init_pos: _ } => {}
       BunnyStage::PlayKazoo { t } => {
         let dt = self.t - t;
-        if dt >= 250 {
+        if dt >= 275 {
           self.stage = BunnyStage::WalkToCarrot {
             t: self.t,
             init_pos: self.pos,

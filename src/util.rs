@@ -15,15 +15,15 @@ pub fn move_per_radiate(radiate: &Option<Radiate>, t: usize, pos: (i32, i32)) ->
       t: radiate_t,
       pos: r_pos,
     }) => {
-      let dt = (t - radiate_t).min(50);
-      let dx = pos.0 - r_pos.0;
-      let dy = pos.1 - r_pos.1;
-      let d = dx.pow(2) + dy.pow(2);
+      let dt = (t - radiate_t).min(75);
+      let dx = (pos.0 - r_pos.0) as f32;
+      let dy = (pos.1 - r_pos.1) as f32 * 11. / 5.;
+      let d = dx.powi(2) + dy.powi(2);
       if (d as usize) < dt * dt {
-        let scale = dt as f32 / (d as f32).sqrt();
+        let scale = dt as f32 / d.sqrt();
         (
-          r_pos.0 + (dx as f32 * scale) as i32,
-          r_pos.1 + (dy as f32 * scale) as i32,
+          r_pos.0 + (dx * scale) as i32,
+          r_pos.1 + (dy * scale * 5. / 11.) as i32,
         )
       } else {
         pos

@@ -72,10 +72,10 @@ impl Grass {
     match self.shreek {
       Some(Shreek { t, pos: (x, y) }) => {
         let dt = self.t - t;
-        let d = ((pos.0 - x).pow(2) + (pos.1 - y).pow(2)) as usize;
-        let sqrtd = (d as f32).sqrt();
+        let d = (pos.0 - x).pow(2) as f32 + ((pos.1 - y) as f32 * 11. / 5.).powi(2);
+        let sqrtd = d.sqrt();
         let diff = dt as f32 - sqrtd;
-        sqrtd <= 75. && diff <= 50. && dt * dt >= d && (diff as i32) % 12 <= 4
+        sqrtd <= 100. && diff <= 50. && (dt * dt) as f32 >= d && (diff as i32) % 12 <= 4
       }
       None => false,
     }
