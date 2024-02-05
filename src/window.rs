@@ -108,7 +108,7 @@ impl<W: Write> Window<W> {
         }
       }
     }
-    write!(self.stdout, "{}", cursor::Goto(0, self.height as u16))?;
+    write!(self.stdout, "{}", cursor::Goto(0, (self.height + 1) as u16))?;
     self.stdout.flush()
   }
 }

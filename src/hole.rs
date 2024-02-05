@@ -7,6 +7,7 @@ use crate::{
 
 const Z_IDX: i32 = 20;
 const DEBRIS_Z_IDX: i32 = 6;
+const FLYING_DEBRIS_Z_IDX: i32 = 28;
 
 #[rustfmt::skip]
 const HOLE: [&str; 4] = [
@@ -119,10 +120,15 @@ impl Entity for Hole {
           if !targeted {
             pos = move_per_radiate(&self.radiate, self.t, pos);
           }
+          let z_idx = if pos == (*x, *y) {
+            DEBRIS_Z_IDX
+          } else {
+            FLYING_DEBRIS_Z_IDX
+          };
           (
             Draw::new(*c)
               .with_fg(color::AnsiValue::rgb(2, 1, 0))
-              .with_z(DEBRIS_Z_IDX + if *targeted { 1 } else { 0 }),
+              .with_z(z_idx + if *targeted { 1 } else { 0 }),
             pos,
           )
         }))
