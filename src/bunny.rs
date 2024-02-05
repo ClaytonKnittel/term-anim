@@ -4,7 +4,7 @@ use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use termion::color;
 
 use crate::{
-  basket::Basket, dialog::Dialog, entity::Entity, hole::Hole, landscape::Landscape,
+  basket::Basket, carrot::Carrot, dialog::Dialog, entity::Entity, hole::Hole, landscape::Landscape,
   train_scene::TrainScene, util::Draw,
 };
 
@@ -81,6 +81,7 @@ pub struct Bunny<'a> {
   basket: Basket,
   train_scene: TrainScene,
   hole: Hole,
+  carrot: Carrot,
   completed_activities: u32,
   unused_letters: Vec<usize>,
   rng: &'a mut StdRng,
@@ -101,6 +102,7 @@ impl<'a> Bunny<'a> {
       basket: Basket::new((9, 10)),
       train_scene: TrainScene::new(width, height),
       hole: Hole::new((102, 12)),
+      carrot: Carrot::new((30, 14)),
       completed_activities: 0,
       unused_letters: (0..20).collect(),
       rng,
@@ -302,7 +304,8 @@ impl<'a> Entity for Bunny<'a> {
       .chain(self.landscape.iterate_tiles())
       .chain(self.basket.iterate_tiles())
       .chain(self.train_scene.iterate_tiles())
-      .chain(self.hole.iterate_tiles());
+      .chain(self.hole.iterate_tiles())
+      .chain(self.carrot.iterate_tiles());
 
     match &self.dialog {
       Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
@@ -315,6 +318,7 @@ impl<'a> Entity for Bunny<'a> {
     self.train_scene.tick(t);
     self.basket.tick(t);
     self.hole.tick(t);
+    self.carrot.tick(t);
     self.t = t;
 
     match self.stage {
@@ -624,9 +628,14 @@ impl<'a> Entity for Bunny<'a> {
             "SHRREEEEEEEEKKKKKK!!!!!!".to_string(),
             false,
           ));
+          self.state = BunnyState::BlowKazoo;
           self.landscape.shreek((25, 6));
           self.basket.radiate((25, 6));
           self.hole.radiate((25, 6));
+        } else if dt == 109 {
+          self.carrot.appear();
+        } else if dt == 150 {
+          self.state = BunnyState::Walk1;
         } else if dt == 240 {
           self.dialog = None;
         } else if dt == 250 {

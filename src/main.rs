@@ -1,5 +1,6 @@
 mod basket;
 mod bunny;
+mod carrot;
 mod dialog;
 mod entity;
 mod grass;
