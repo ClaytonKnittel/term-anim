@@ -14,6 +14,7 @@ mod train_scene;
 mod util;
 mod water;
 mod window;
+mod zoom;
 
 use std::time::SystemTime;
 

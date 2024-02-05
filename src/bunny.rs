@@ -5,7 +5,7 @@ use termion::color;
 
 use crate::{
   basket::Basket, carrot::Carrot, dialog::Dialog, entity::Entity, hole::Hole, landscape::Landscape,
-  train_scene::TrainScene, util::Draw,
+  train_scene::TrainScene, util::Draw, zoom::Zoom,
 };
 
 const Z_IDX: i32 = 25;
@@ -85,6 +85,7 @@ pub struct Bunny<'a> {
   train_scene: TrainScene,
   hole: Hole,
   carrot: Carrot,
+  zoom: Zoom,
   completed_activities: u32,
   unused_letters: Vec<usize>,
   rng: &'a mut StdRng,
@@ -106,6 +107,7 @@ impl<'a> Bunny<'a> {
       train_scene: TrainScene::new(width, height),
       hole: Hole::new((102, 12)),
       carrot: Carrot::new((30, 14)),
+      zoom: Zoom::new(width, height),
       completed_activities: 0,
       unused_letters: (0..20).collect(),
       rng,
@@ -162,7 +164,7 @@ impl<'a> Bunny<'a> {
     const NUM_TARGETS: u32 = 6;
     const TOTAL_LEN: u32 = LETTERS.len() as u32;
 
-    let idx = self.unused_letters.len() as u32 * NUM_TARGETS / TOTAL_LEN;
+    let idx = (self.unused_letters.len() + 1) as u32 * NUM_TARGETS / TOTAL_LEN;
     let num_to_take = (idx * TOTAL_LEN / NUM_TARGETS) - ((idx - 1) * TOTAL_LEN / NUM_TARGETS);
     (0..num_to_take)
       .map(|_| {
@@ -318,7 +320,8 @@ impl<'a> Entity for Bunny<'a> {
       .chain(self.basket.iterate_tiles())
       .chain(self.train_scene.iterate_tiles())
       .chain(self.hole.iterate_tiles())
-      .chain(self.carrot.iterate_tiles());
+      .chain(self.carrot.iterate_tiles())
+      .chain(self.zoom.iterate_tiles());
 
     match &self.dialog {
       Some(dialog) => Box::new(bunny_iter.chain(dialog.iterate_tiles())),
@@ -332,6 +335,7 @@ impl<'a> Entity for Bunny<'a> {
     self.basket.tick(t);
     self.hole.tick(t);
     self.carrot.tick(t);
+    self.zoom.tick(t);
     self.t = t;
 
     match self.stage {
@@ -696,12 +700,23 @@ impl<'a> Entity for Bunny<'a> {
             } else if dt == 80 {
               self.carrot.set_pos((34, 14));
               self.carrot.delete_head();
+              let letters = self.random_guaranteed_letters();
+              self.carrot.set_target_letters(letters);
               self.state = BunnyState::Walk1;
             } else if dt > 85 {
-              if (dt / 7) % 2 == 0 {
+              if dt % 14 == 0 {
                 self.state = BunnyState::Munch;
-              } else {
+              } else if dt % 14 == 7 {
                 self.state = BunnyState::Walk1;
+                self.carrot.scatter(self.rng);
+              }
+
+              if dt == 200 {
+                self.zoom.zoom((63, 7), 7);
+              } else if dt == 400 {
+                self.zoom.zoom2((25, 6), 5);
+              } else if dt == 600 {
+                self.zoom.disappear();
               }
             }
           }

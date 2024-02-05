@@ -33,6 +33,12 @@ pub fn move_per_radiate(radiate: &Option<Radiate>, t: usize, pos: (i32, i32)) ->
   }
 }
 
+pub fn explosion_target_dt(target: (i32, i32), origin: (i32, i32)) -> usize {
+  let dx = (target.0 - origin.0) as f32;
+  let dy = (target.1 - origin.1) as f32;
+  (dx.abs() * 0.3 + dy.abs() * 0.4 + 2.).ceil() as usize
+}
+
 pub fn explosion_path(dt: f32, target: (i32, i32), origin: (i32, i32)) -> (i32, i32) {
   let dx = (target.0 - origin.0) as f32;
   let dy = (target.1 - origin.1) as f32;

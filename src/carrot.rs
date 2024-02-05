@@ -1,8 +1,13 @@
+use rand::Rng;
 use termion::color;
 
-use crate::{entity::Entity, util::Draw};
+use crate::{
+  entity::Entity,
+  util::{explosion_path, explosion_target_dt, Draw},
+};
 
 const Z_IDX: i32 = 26;
+const DEBRIS_Z_IDX: i32 = 25;
 
 pub struct Carrot {
   t: usize,
@@ -11,7 +16,7 @@ pub struct Carrot {
   upside_down: bool,
   no_head: bool,
   target_letters: Vec<(char, (i32, i32))>,
-  debris: Vec<(usize, char, (i32, i32))>,
+  debris: Vec<(usize, char, (i32, i32), bool)>,
 }
 
 impl Carrot {
@@ -45,6 +50,29 @@ impl Carrot {
 
   pub fn set_target_letters(&mut self, letters: Vec<(char, (i32, i32))>) {
     self.target_letters = letters;
+  }
+
+  pub fn scatter<R: Rng>(&mut self, rng: &mut R) {
+    const RADIUS: i32 = 15;
+    self.debris.append(
+      &mut (0..15)
+        .map(|_| {
+          let mut dx = rng.gen_range(-RADIUS..=RADIUS);
+          let mut dy = rng.gen_range(-RADIUS..=RADIUS);
+          while dx * dx + dy * dy > (RADIUS * RADIUS) || self.pos.0 + dx < 0 || self.pos.1 + dy < 0
+          {
+            dx = rng.gen_range(-RADIUS..=RADIUS);
+            dy = rng.gen_range(-RADIUS..=RADIUS);
+          }
+
+          let letter = rng.gen_range('a'..='z');
+          (self.t, letter, (self.pos.0 + dx, self.pos.1 + dy), false)
+        })
+        .collect(),
+    );
+    if let Some((c, pos)) = self.target_letters.pop() {
+      self.debris.push((self.t, c, pos, true));
+    }
   }
 }
 
@@ -98,12 +126,28 @@ impl Entity for Carrot {
       .take(match self.appear {
         Some(initial_t) => self.t - initial_t,
         None => 0,
-      }),
+      })
+      .chain(self.debris.iter().map(move |(t, c, (x, y), targeted)| {
+        (
+          Draw::new(*c)
+            .with_fg(color::AnsiValue::rgb(5, 1, 0))
+            .with_z(DEBRIS_Z_IDX + if *targeted { 1 } else { 0 }),
+          explosion_path((self.t - t) as f32, (*x, *y), self.pos),
+        )
+      })),
     )
   }
 
   fn tick(&mut self, t: usize) {
     self.t = t;
+    self.debris = self
+      .debris
+      .clone()
+      .into_iter()
+      .filter(|(t, _, pos, targeted)| {
+        *targeted || 2 * explosion_target_dt(*pos, self.pos) > self.t - t
+      })
+      .collect();
   }
 
   fn click(&mut self, _x: u32, _y: u32) {}
