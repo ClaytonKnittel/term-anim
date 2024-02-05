@@ -7,7 +7,7 @@ use crate::{
   basket::Basket, dialog::Dialog, entity::Entity, hole::Hole, train_scene::TrainScene, util::Draw,
 };
 
-const Z_IDX: i32 = 10;
+const Z_IDX: i32 = 25;
 // const STEP_PERIOD: usize = 10;
 const STEP_PERIOD: usize = 1;
 
@@ -40,6 +40,8 @@ enum BunnyState {
   Walk1,
   Walk2,
   Blink { t: usize },
+  HoldKazoo,
+  BlowKazoo,
 }
 
 enum Direction {
@@ -64,6 +66,7 @@ enum BunnyStage {
   Dig,
   HoleHasNoCarrots { t: usize, dialog_idx: u32 },
   WalkToKazoo { t: usize, init_pos: (i32, i32) },
+  PlayKazoo { t: usize },
 }
 
 pub struct Bunny<'a> {
@@ -236,6 +239,22 @@ const LEFT_BLINK: [&str; 4] = [
   r#"(")(")"#,
 ];
 
+#[rustfmt::skip]
+const LEFT_HOLD_KAZOO: [&str; 4] = [
+  r#"  /)/)"#,
+  r#" (o.o)"#,
+  r#"<(__<)"#,
+  r#"(")(")"#,
+];
+
+#[rustfmt::skip]
+const LEFT_HOLD_KAZOO_BLOW: [&str; 4] = [
+  r#"  /)/)"#,
+  r#" (-o-)"#,
+  r#"<(__<)"#,
+  r#"(")(")"#,
+];
+
 impl<'a> Entity for Bunny<'a> {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     let bunny_str: &[&str] = match (&self.state, &self.direction) {
@@ -249,6 +268,10 @@ impl<'a> Entity for Bunny<'a> {
       (BunnyState::Walk2, Direction::Right) => &RIGHT_STEP2,
       (BunnyState::Blink { t: _ }, Direction::Left) => &LEFT_BLINK,
       (BunnyState::Blink { t: _ }, Direction::Right) => &RIGHT_BLINK,
+      (BunnyState::HoldKazoo, Direction::Left) => &LEFT_HOLD_KAZOO,
+      (BunnyState::HoldKazoo, Direction::Right) => unreachable!(),
+      (BunnyState::BlowKazoo, Direction::Left) => &LEFT_HOLD_KAZOO_BLOW,
+      (BunnyState::BlowKazoo, Direction::Right) => unreachable!(),
     };
 
     let bunny_iter = bunny_str
@@ -575,10 +598,25 @@ impl<'a> Entity for Bunny<'a> {
         const TARGET: (i32, i32) = (26, 4);
         let dt = t - initial_t;
         if dt > self.dt_to_completion(init_pos, TARGET) {
+          self.stage = BunnyStage::PlayKazoo { t };
           self.state = BunnyState::Walk1;
           self.direction = Direction::Left;
         } else {
           self.interpolate_pos(t - initial_t, init_pos, TARGET);
+        }
+      }
+      BunnyStage::PlayKazoo { t: initial_t } => {
+        let dt = t - initial_t;
+        if dt == 50 {
+          self.state = BunnyState::HoldKazoo;
+          self.direction = Direction::Left;
+          self.hole.set_kazoo_pos((25, 6));
+        } else if dt == 100 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 7, self.pos.1),
+            "SHRREEEEEEEEKKKKKK!!!!!!".to_string(),
+            false,
+          ));
         }
       }
     }
@@ -767,7 +805,8 @@ impl<'a> Entity for Bunny<'a> {
           0 => self.t >= t + 50,
           1 => self.t >= t + 10,
           _ => unreachable!(),
-        } {
+        } && (dialog_idx != 0 || !self.hole.contains_click((x, y)))
+        {
           if dialog_idx == 1 {
             if self.completed_activities == 2 {
               self.stage = BunnyStage::WalkToKazoo {
@@ -787,6 +826,7 @@ impl<'a> Entity for Bunny<'a> {
         }
       }
       BunnyStage::WalkToKazoo { t: _, init_pos: _ } => {}
+      BunnyStage::PlayKazoo { t: _ } => {}
     }
   }
 

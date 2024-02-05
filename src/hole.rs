@@ -39,7 +39,7 @@ pub struct Hole {
   pos: (i32, i32),
   queued_dirt: Vec<(bool, char, (i32, i32))>,
   flung_dirt: Vec<(usize, bool, char, (i32, i32))>,
-  kazoo: Option<usize>,
+  kazoo: Option<(usize, (i32, i32))>,
 }
 
 impl Hole {
@@ -70,10 +70,14 @@ impl Hole {
         true
       }
       None => {
-        self.kazoo = Some(self.t);
+        self.kazoo = Some((self.t, (24, 5)));
         false
       }
     }
+  }
+
+  pub fn set_kazoo_pos(&mut self, pos: (i32, i32)) {
+    self.kazoo = self.kazoo.map(|(t, _)| (t, pos))
   }
 }
 
@@ -113,19 +117,21 @@ impl Entity for Hole {
           )
         }))
         .chain(match self.kazoo {
-          Some(kazoo_t) => Box::new(KAZOO.iter().map(move |(c, (dx, dy), color1, color2)| {
-            let (x, y) = explosion_path(
-              (self.t - kazoo_t) as f32,
-              (24, 5),
-              (self.pos.0 + 2, self.pos.1 + 2),
-            );
-            let color = if (self.t / 30) % 2 == 0 {
-              *color1
-            } else {
-              *color2
-            };
-            (Draw::new(*c).with_fg(color).with_z(Z_IDX), (x + dx, y + dy))
-          })) as Box<dyn Iterator<Item = (Draw, (i32, i32))>>,
+          Some((kazoo_t, kazoo_pos)) => {
+            Box::new(KAZOO.iter().map(move |(c, (dx, dy), color1, color2)| {
+              let (x, y) = explosion_path(
+                (self.t - kazoo_t) as f32,
+                kazoo_pos,
+                (self.pos.0 + 2, self.pos.1 + 2),
+              );
+              let color = if (self.t / 30) % 2 == 0 {
+                *color1
+              } else {
+                *color2
+              };
+              (Draw::new(*c).with_fg(color).with_z(Z_IDX), (x + dx, y + dy))
+            })) as Box<dyn Iterator<Item = (Draw, (i32, i32))>>
+          }
           None => Box::new([].into_iter()),
         }),
     )
