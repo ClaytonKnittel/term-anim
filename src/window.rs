@@ -78,7 +78,7 @@ impl<W: Write> Window<W> {
       .zip(self.prev_canvas.iter())
       .enumerate()
       .fold(
-        ((10000, 0), (10000, 0)),
+        ((u32::MAX, 0), (u32::MAX, 0)),
         |((min_x, max_x), (min_y, max_y)), (idx, (d1, d2))| {
           if d1 != d2 {
             let (x, y) = self.idx_to_pos(idx);
@@ -108,6 +108,7 @@ impl<W: Write> Window<W> {
         }
       }
     }
+    write!(self.stdout, "{}", cursor::Goto(0, self.height as u16))?;
     self.stdout.flush()
   }
 }
