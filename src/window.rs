@@ -65,7 +65,7 @@ impl<W: Write> Window<W> {
   }
 
   pub fn render(&mut self) -> std::io::Result<()> {
-    write!(self.stdout, "{}", cursor::Up(self.height as u16),)?;
+    write!(self.stdout, "{}", cursor::Goto(1, 1))?;
     for y in 0..self.height {
       for x in 0..self.width {
         if let Some(draw) = self.get(x, y).clone() {

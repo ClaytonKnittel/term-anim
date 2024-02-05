@@ -67,7 +67,6 @@ pub fn explosion_path(dt: f32, target: (i32, i32), origin: (i32, i32)) -> (i32, 
 pub struct Draw {
   item: char,
   fg_color: Option<color::AnsiValue>,
-  bg_color: Option<color::AnsiValue>,
   z_idx: i32,
   italic: bool,
 }
@@ -77,7 +76,6 @@ impl Draw {
     Self {
       item,
       fg_color: None,
-      bg_color: None,
       z_idx: 0,
       italic: false,
     }
@@ -90,13 +88,6 @@ impl Draw {
   pub fn with_fg(self, color: color::AnsiValue) -> Self {
     Self {
       fg_color: Some(color),
-      ..self
-    }
-  }
-
-  pub fn with_bg(self, color: color::AnsiValue) -> Self {
-    Self {
-      bg_color: Some(color),
       ..self
     }
   }
@@ -124,24 +115,11 @@ impl Display for Draw {
     } else {
       color::Reset.fg_str().to_owned()
     };
-    let bg_str = if let Some(color) = self.bg_color {
-      color.bg_string()
-    } else {
-      color::Reset.bg_str().to_owned()
-    };
     let italic_str = if self.italic {
       style::Italic.to_string()
     } else {
       "".to_owned()
     };
-    write!(
-      f,
-      "{}{}{}{}{}",
-      style::Reset,
-      italic_str,
-      fg_str,
-      bg_str,
-      self.item
-    )
+    write!(f, "{}{}{}{}", style::Reset, italic_str, fg_str, self.item)
   }
 }

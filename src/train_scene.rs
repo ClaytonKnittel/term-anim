@@ -11,7 +11,6 @@ pub struct TrainScene {
   track: Track,
   train: Train,
   width: u32,
-  height: u32,
 }
 
 impl TrainScene {
@@ -21,7 +20,6 @@ impl TrainScene {
       track: Track::new(height * 5 / 8, width),
       train: Train::new(5, 4 * width as i32, height * 5 / 8 - 2),
       width,
-      height,
     }
   }
 

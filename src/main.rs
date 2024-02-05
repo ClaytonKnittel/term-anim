@@ -30,6 +30,12 @@ use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
 
 fn main() {
+  // let guard = pprof::ProfilerGuardBuilder::default()
+  //   .frequency(1000)
+  //   .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+  //   .build()
+  //   .unwrap();
+
   let stdout = HideCursor::from(MouseTerminal::from(
     std::io::stdout().lock().into_raw_mode().unwrap(),
   ));
@@ -37,16 +43,9 @@ fn main() {
   let mut stdin = async_stdin().events();
   let done = Mutex::new(false);
 
-  //let guard = pprof::ProfilerGuardBuilder::default()
-  //  .frequency(1000)
-  //  .blocklist(&["libc", "libgcc", "pthread", "vdso"])
-  //  .build()
-  //  .unwrap();
-
   let mut r = rngs::StdRng::seed_from_u64(27418995609531717u64);
 
   let bunny = Bunny::new(window.width(), window.height(), &mut r, &done);
-  // let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
   scene.add_entity(Box::new(bunny));
@@ -85,8 +84,8 @@ fn main() {
     std::thread::sleep(sleep_duration);
   }
 
-  //if let Ok(report) = guard.report().build() {
-  //  let file = std::fs::File::create("prof.svg").unwrap();
-  //  report.flamegraph(file).unwrap();
-  //};
+  // if let Ok(report) = guard.report().build() {
+  //   let file = std::fs::File::create("prof.svg").unwrap();
+  //   report.flamegraph(file).unwrap();
+  // };
 }
