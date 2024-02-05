@@ -26,12 +26,18 @@ enum PeachState {
   },
 }
 
+struct Radiate {
+  t: usize,
+  pos: (i32, i32),
+}
+
 pub struct Peach {
   x: i32,
   y: i32,
   t: usize,
   color: color::AnsiValue,
   state: PeachState,
+  radiate: Option<Radiate>,
 }
 
 impl Peach {
@@ -42,6 +48,7 @@ impl Peach {
       t: 0,
       color,
       state: PeachState::Idle,
+      radiate: None,
     }
   }
 
@@ -80,6 +87,31 @@ impl Peach {
   pub fn hitbox(&self) -> (i32, i32) {
     (self.x + 1, self.y + 1)
   }
+
+  pub fn radiate(&mut self, pos: (i32, i32)) {
+    self.radiate = Some(Radiate { t: self.t, pos });
+  }
+
+  fn move_per_radiate(&self, pos: (i32, i32)) -> (i32, i32) {
+    match self.radiate {
+      Some(Radiate { t, pos: r_pos }) => {
+        let dt = (self.t - t).min(50);
+        let dx = pos.0 - r_pos.0;
+        let dy = pos.1 - r_pos.1;
+        let d = dx.pow(2) + dy.pow(2);
+        if (d as usize) < dt * dt {
+          let scale = dt as f32 / (d as f32).sqrt();
+          (
+            r_pos.0 + (dx as f32 * scale) as i32,
+            r_pos.1 + (dy as f32 * scale) as i32,
+          )
+        } else {
+          pos
+        }
+      }
+      None => pos,
+    }
+  }
 }
 
 impl Entity for Peach {
@@ -114,11 +146,15 @@ impl Entity for Peach {
           .zip(iter::repeat(true))
           .chain(rand_letters.iter().zip(iter::repeat(false))))
         .map(move |((c, (x, y)), targeted)| {
+          let mut pos = explosion_path((self.t - t) as f32, (*x, *y), (self.x, self.y));
+          if !targeted {
+            pos = self.move_per_radiate(pos);
+          }
           (
             Draw::new(*c)
               .with_fg(self.color)
               .with_z(DEBRIS_Z_IDX + if targeted { 1 } else { 0 }),
-            explosion_path((self.t - t) as f32, (*x, *y), (self.x, self.y)),
+            pos,
           )
         }),
       ),

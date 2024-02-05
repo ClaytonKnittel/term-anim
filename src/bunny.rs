@@ -625,6 +625,7 @@ impl<'a> Entity for Bunny<'a> {
             false,
           ));
           self.landscape.shreek((25, 6));
+          self.basket.radiate((25, 6));
         }
       }
     }

@@ -50,6 +50,10 @@ impl Basket {
   pub fn peach_at_mut(&mut self, idx: usize) -> &mut Peach {
     &mut self.peaches[idx]
   }
+
+  pub fn radiate(&mut self, pos: (i32, i32)) {
+    self.peaches_mut().for_each(|peach| peach.radiate(pos));
+  }
 }
 
 impl Entity for Basket {
