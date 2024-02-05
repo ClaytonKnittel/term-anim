@@ -5,7 +5,6 @@ mod entity;
 mod grass;
 mod hole;
 mod landscape;
-mod main_scene;
 mod peach;
 mod scene;
 mod track;
@@ -17,8 +16,8 @@ mod window;
 
 use std::time::SystemTime;
 
+use bunny::Bunny;
 use entity::Entity;
-use main_scene::MainScene;
 use rand::{rngs, SeedableRng};
 use scene::Scene;
 use termion::async_stdin;
@@ -42,11 +41,11 @@ fn main() {
 
   let mut r = rngs::StdRng::seed_from_u64(27418995609531717u64);
 
-  let main_scene = MainScene::new(window.width(), window.height(), &mut r);
+  let bunny = Bunny::new(window.width(), window.height(), &mut r);
   // let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
-  scene.add_entity(Box::new(main_scene));
+  scene.add_entity(Box::new(bunny));
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();

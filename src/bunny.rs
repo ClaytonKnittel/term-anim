@@ -4,7 +4,8 @@ use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use termion::color;
 
 use crate::{
-  basket::Basket, dialog::Dialog, entity::Entity, hole::Hole, train_scene::TrainScene, util::Draw,
+  basket::Basket, dialog::Dialog, entity::Entity, hole::Hole, landscape::Landscape,
+  train_scene::TrainScene, util::Draw,
 };
 
 const Z_IDX: i32 = 25;
@@ -76,6 +77,7 @@ pub struct Bunny<'a> {
   dialog: Option<Dialog>,
   pos: (i32, i32),
   t: usize,
+  landscape: Landscape,
   basket: Basket,
   train_scene: TrainScene,
   hole: Hole,
@@ -85,7 +87,9 @@ pub struct Bunny<'a> {
 }
 
 impl<'a> Bunny<'a> {
-  pub fn new(pos: (i32, i32), width: u32, height: u32, rng: &'a mut StdRng) -> Self {
+  pub fn new(width: u32, height: u32, rng: &'a mut StdRng) -> Self {
+    let landscape = Landscape::new(width, height, rng);
+    let pos = (width as i32 / 2 - 10, height as i32 / 2 - 10);
     Self {
       state: BunnyState::Sleep,
       stage: BunnyStage::Sleep1,
@@ -93,6 +97,7 @@ impl<'a> Bunny<'a> {
       dialog: None,
       pos,
       t: 0,
+      landscape,
       basket: Basket::new((9, 10)),
       train_scene: TrainScene::new(width, height),
       hole: Hole::new((102, 12)),
@@ -294,6 +299,7 @@ impl<'a> Entity for Bunny<'a> {
           ))
         })
       })
+      .chain(self.landscape.iterate_tiles())
       .chain(self.basket.iterate_tiles())
       .chain(self.train_scene.iterate_tiles())
       .chain(self.hole.iterate_tiles());
@@ -305,6 +311,7 @@ impl<'a> Entity for Bunny<'a> {
   }
 
   fn tick(&mut self, t: usize) {
+    self.landscape.tick(t);
     self.train_scene.tick(t);
     self.basket.tick(t);
     self.hole.tick(t);
@@ -617,12 +624,14 @@ impl<'a> Entity for Bunny<'a> {
             "SHRREEEEEEEEKKKKKK!!!!!!".to_string(),
             false,
           ));
+          self.landscape.shreek((25, 6));
         }
       }
     }
   }
 
   fn click(&mut self, x: u32, y: u32) {
+    self.landscape.click(x, y);
     if let BunnyStage::AwaitPeachDestruction {
       t: _,
       rem_peaches: _,
@@ -831,10 +840,12 @@ impl<'a> Entity for Bunny<'a> {
   }
 
   fn drag(&mut self, x: u32, y: u32) {
+    self.landscape.drag(x, y);
     self.basket.drag(x, y);
   }
 
   fn release(&mut self, x: u32, y: u32) {
+    self.landscape.release(x, y);
     self.basket.release(x, y);
   }
 }

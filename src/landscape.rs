@@ -28,6 +28,10 @@ impl Landscape {
 
     Self { grass, water }
   }
+
+  pub fn shreek(&mut self, pos: (i32, i32)) {
+    self.grass.shreek(pos);
+  }
 }
 
 impl Entity for Landscape {

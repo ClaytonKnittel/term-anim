@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use termion::color;
+use termion::{color, style};
 
 const G: f32 = -0.1;
 
@@ -34,6 +34,7 @@ pub struct Draw {
   fg_color: Option<color::AnsiValue>,
   bg_color: Option<color::AnsiValue>,
   z_idx: i32,
+  italic: bool,
 }
 
 impl Draw {
@@ -43,6 +44,7 @@ impl Draw {
       fg_color: None,
       bg_color: None,
       z_idx: 0,
+      italic: false,
     }
   }
 
@@ -71,6 +73,13 @@ impl Draw {
   pub fn z_idx(&self) -> i32 {
     self.z_idx
   }
+
+  pub fn with_italic(self) -> Self {
+    Self {
+      italic: true,
+      ..self
+    }
+  }
 }
 
 impl Display for Draw {
@@ -85,6 +94,19 @@ impl Display for Draw {
     } else {
       color::Reset.bg_str().to_owned()
     };
-    write!(f, "{}{}{}", fg_str, bg_str, self.item)
+    let italic_str = if self.italic {
+      style::Italic.to_string()
+    } else {
+      "".to_owned()
+    };
+    write!(
+      f,
+      "{}{}{}{}{}",
+      style::Reset,
+      italic_str,
+      fg_str,
+      bg_str,
+      self.item
+    )
   }
 }
