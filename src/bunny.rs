@@ -9,8 +9,7 @@ use crate::{
 };
 
 const Z_IDX: i32 = 25;
-// const STEP_PERIOD: usize = 10;
-const STEP_PERIOD: usize = 1;
+const STEP_PERIOD: usize = 10;
 
 const LETTERS: [(char, (i32, i32)); 20] = [
   ('H', (60, 5)),
@@ -139,10 +138,10 @@ impl<'a> Bunny<'a> {
       if step_num % 2 != 0 {
         self.pos = (init_pos.0 + step_num as i32 * dx.signum(), init_pos.1);
       }
-      self.state = if (dx < 0) ^ (step_num % 2 == 0) {
-        BunnyState::Walk2
-      } else {
+      self.state = if step_num % 2 == 0 {
         BunnyState::Walk1
+      } else {
+        BunnyState::Walk2
       };
     } else if step_num <= (dx.unsigned_abs() + 2 * dy.unsigned_abs()) as usize {
       if dx < 0 {
