@@ -43,6 +43,7 @@ enum BunnyState {
   Blink { t: usize },
   HoldKazoo,
   BlowKazoo,
+  Munch,
 }
 
 enum Direction {
@@ -264,6 +265,14 @@ const LEFT_HOLD_KAZOO_BLOW: [&str; 4] = [
   r#"(")(")"#,
 ];
 
+#[rustfmt::skip]
+const LEFT_MUNCH: [&str; 4] = [
+  r#"  /)/)"#,
+  r#" (o0o)"#,
+  r#" (>_<)"#,
+  r#"(")(")"#,
+];
+
 impl<'a> Entity for Bunny<'a> {
   fn iterate_tiles(&self) -> Box<dyn Iterator<Item = (Draw, (i32, i32))> + '_> {
     let bunny_str: &[&str] = match (&self.state, &self.direction) {
@@ -281,6 +290,8 @@ impl<'a> Entity for Bunny<'a> {
       (BunnyState::HoldKazoo, Direction::Right) => unreachable!(),
       (BunnyState::BlowKazoo, Direction::Left) => &LEFT_HOLD_KAZOO_BLOW,
       (BunnyState::BlowKazoo, Direction::Right) => unreachable!(),
+      (BunnyState::Munch, Direction::Left) => &LEFT_MUNCH,
+      (BunnyState::Munch, Direction::Right) => unreachable!(),
     };
 
     let bunny_iter = bunny_str
@@ -686,6 +697,12 @@ impl<'a> Entity for Bunny<'a> {
               self.carrot.set_pos((34, 14));
               self.carrot.delete_head();
               self.state = BunnyState::Walk1;
+            } else if dt > 85 {
+              if (dt / 7) % 2 == 0 {
+                self.state = BunnyState::Munch;
+              } else {
+                self.state = BunnyState::Walk1;
+              }
             }
           }
           _ => unreachable!(),

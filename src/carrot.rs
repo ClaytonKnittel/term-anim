@@ -10,6 +10,8 @@ pub struct Carrot {
   appear: Option<usize>,
   upside_down: bool,
   no_head: bool,
+  target_letters: Vec<(char, (i32, i32))>,
+  debris: Vec<(usize, char, (i32, i32))>,
 }
 
 impl Carrot {
@@ -20,6 +22,8 @@ impl Carrot {
       appear: None,
       upside_down: false,
       no_head: false,
+      target_letters: Vec::new(),
+      debris: Vec::new(),
     }
   }
 
@@ -37,6 +41,10 @@ impl Carrot {
 
   pub fn make_upside_down(&mut self) {
     self.upside_down = true;
+  }
+
+  pub fn set_target_letters(&mut self, letters: Vec<(char, (i32, i32))>) {
+    self.target_letters = letters;
   }
 }
 
