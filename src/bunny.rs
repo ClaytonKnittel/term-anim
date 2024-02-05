@@ -68,6 +68,8 @@ enum BunnyStage {
   HoleHasNoCarrots { t: usize, dialog_idx: u32 },
   WalkToKazoo { t: usize, init_pos: (i32, i32) },
   PlayKazoo { t: usize },
+  WalkToCarrot { t: usize, init_pos: (i32, i32) },
+  EatCarrot { t: usize },
 }
 
 pub struct Bunny<'a> {
@@ -646,6 +648,21 @@ impl<'a> Entity for Bunny<'a> {
           ));
         }
       }
+      BunnyStage::WalkToCarrot {
+        t: initial_t,
+        init_pos,
+      } => {
+        const TARGET: (i32, i32) = (31, 13);
+        let dt = t - initial_t;
+        if dt > self.dt_to_completion(init_pos, TARGET) {
+          self.stage = BunnyStage::EatCarrot { t };
+          self.state = BunnyState::Walk1;
+          self.direction = Direction::Left;
+        } else {
+          self.interpolate_pos(t - initial_t, init_pos, TARGET);
+        }
+      }
+      BunnyStage::EatCarrot { t } => {}
     }
   }
 
@@ -854,7 +871,18 @@ impl<'a> Entity for Bunny<'a> {
         }
       }
       BunnyStage::WalkToKazoo { t: _, init_pos: _ } => {}
-      BunnyStage::PlayKazoo { t: _ } => {}
+      BunnyStage::PlayKazoo { t } => {
+        let dt = self.t - t;
+        if dt >= 250 {
+          self.stage = BunnyStage::WalkToCarrot {
+            t: self.t,
+            init_pos: self.pos,
+          };
+          self.dialog = None;
+        }
+      }
+      BunnyStage::WalkToCarrot { t: _, init_pos: _ } => {}
+      BunnyStage::EatCarrot { t } => {}
     }
   }
 
