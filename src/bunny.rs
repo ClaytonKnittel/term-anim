@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, sync::Mutex};
 
 use rand::{rngs::StdRng, seq::SliceRandom, Rng};
 use termion::color;
@@ -89,10 +89,11 @@ pub struct Bunny<'a> {
   completed_activities: u32,
   unused_letters: Vec<usize>,
   rng: &'a mut StdRng,
+  done: &'a Mutex<bool>,
 }
 
 impl<'a> Bunny<'a> {
-  pub fn new(width: u32, height: u32, rng: &'a mut StdRng) -> Self {
+  pub fn new(width: u32, height: u32, rng: &'a mut StdRng, done: &'a Mutex<bool>) -> Self {
     let landscape = Landscape::new(width, height, rng);
     let pos = (width as i32 / 2 - 10, height as i32 / 2 - 10);
     Self {
@@ -111,6 +112,7 @@ impl<'a> Bunny<'a> {
       completed_activities: 0,
       unused_letters: (0..20).collect(),
       rng,
+      done,
     }
   }
 
@@ -717,6 +719,8 @@ impl<'a> Entity for Bunny<'a> {
                 self.zoom.zoom2((25, 6), 5);
               } else if dt == 600 {
                 self.zoom.disappear();
+              } else if dt == 680 {
+                *self.done.lock().unwrap() = true;
               }
             }
           }

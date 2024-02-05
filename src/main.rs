@@ -16,6 +16,7 @@ mod water;
 mod window;
 mod zoom;
 
+use std::sync::Mutex;
 use std::time::SystemTime;
 
 use bunny::Bunny;
@@ -34,6 +35,7 @@ fn main() {
   ));
   let mut window = window::Window::new(stdout, 120, 40);
   let mut stdin = async_stdin().events();
+  let done = Mutex::new(false);
 
   //let guard = pprof::ProfilerGuardBuilder::default()
   //  .frequency(1000)
@@ -43,7 +45,7 @@ fn main() {
 
   let mut r = rngs::StdRng::seed_from_u64(27418995609531717u64);
 
-  let bunny = Bunny::new(window.width(), window.height(), &mut r);
+  let bunny = Bunny::new(window.width(), window.height(), &mut r, &done);
   // let text = Dialog::new((20, 20), "Sample text".to_string());
 
   let mut scene = Scene::new();
@@ -51,6 +53,9 @@ fn main() {
 
   'outer: for t in 0usize.. {
     let start = SystemTime::now();
+    if *done.lock().unwrap() {
+      break;
+    }
     for evt in stdin.by_ref() {
       match evt {
         Ok(Event::Key(Key::Char('q'))) => break 'outer,
