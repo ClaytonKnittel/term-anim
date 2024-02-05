@@ -94,21 +94,19 @@ impl<W: Write> Window<W> {
       return Ok(());
     }
 
-    write!(self.stdout, "{}", cursor::Goto(1, 1))?;
-    for y in 0..self.height {
-      for x in 0..self.width {
+    for y in min_y..=max_y {
+      write!(
+        self.stdout,
+        "{}",
+        cursor::Goto((min_x + 1) as u16, (y + 1) as u16)
+      )?;
+      for x in min_x..=max_x {
         if let Some(draw) = self.get(x, y).clone() {
           write!(self.stdout, "{}", draw)?;
         } else {
           write!(self.stdout, " ")?;
         }
       }
-      write!(
-        self.stdout,
-        "{}{}",
-        cursor::Left(self.width as u16),
-        cursor::Down(1)
-      )?;
     }
     self.stdout.flush()
   }
