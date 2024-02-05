@@ -58,6 +58,10 @@ impl<W: Write> Window<W> {
     self.canvas = (0..(self.width * self.height)).map(|_| None).collect();
   }
 
+  pub fn cleanup(&mut self) -> std::io::Result<()> {
+    write!(self.stdout, "{}", cursor::Goto(1, 1))
+  }
+
   pub fn draw(&mut self, draw: Draw, pos: (u32, u32)) {
     *self.get_mut(pos.0, pos.1) = Some(self.get(pos.0, pos.1).clone().map_or(
       draw.clone(),

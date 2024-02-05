@@ -6,12 +6,13 @@ use termion::color;
 use crate::{
   entity::Entity,
   util::{explosion_path, move_per_radiate, Draw, Radiate},
+  water::Water,
 };
 
 const Z_IDX: i32 = 30;
 const DEBRIS_Z_IDX: i32 = 6;
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 enum PeachState {
   Idle,
   /// (dx, dy) is the distance to the peach from where the mouse is held.
@@ -86,6 +87,45 @@ impl Peach {
   pub fn radiate(&mut self, pos: (i32, i32)) {
     self.radiate = Some(Radiate { t: self.t, pos });
   }
+
+  fn debris_pos(
+    &self,
+    (t, targeted, _, (x, y)): &(usize, bool, char, (i32, i32)),
+  ) -> ((i32, i32), bool) {
+    let mut pos = explosion_path((self.t - t) as f32, (*x, *y), (self.x, self.y));
+    let resting = pos == (*x, *y);
+    if !targeted {
+      pos = move_per_radiate(&self.radiate, self.t, pos);
+    }
+    (pos, resting)
+  }
+
+  pub fn maybe_dunk(&mut self, water: &mut Water) {
+    if let PeachState::Explode {
+      t,
+      target_letters,
+      rand_letters,
+    } = self.state.clone()
+    {
+      self.state = PeachState::Explode {
+        t,
+        target_letters,
+        rand_letters: rand_letters
+          .clone()
+          .into_iter()
+          .filter(|&(c, pos)| {
+            let (pos, resting) = self.debris_pos(&(t, false, c, pos));
+            if resting && water.is_wet(pos) {
+              water.click(pos.0 as u32, pos.1 as u32);
+              false
+            } else {
+              true
+            }
+          })
+          .collect(),
+      };
+    }
+  }
 }
 
 impl Entity for Peach {
@@ -120,10 +160,7 @@ impl Entity for Peach {
           .zip(iter::repeat(true))
           .chain(rand_letters.iter().zip(iter::repeat(false))))
         .map(move |((c, (x, y)), targeted)| {
-          let mut pos = explosion_path((self.t - t) as f32, (*x, *y), (self.x, self.y));
-          if !targeted {
-            pos = move_per_radiate(&self.radiate, self.t, pos);
-          }
+          let (pos, _) = self.debris_pos(&(*t, targeted, *c, (*x, *y)));
           (
             Draw::new(*c)
               .with_fg(self.color)

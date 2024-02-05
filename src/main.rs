@@ -84,6 +84,8 @@ fn main() {
     std::thread::sleep(sleep_duration);
   }
 
+  window.cleanup().expect("Failed to cleanup");
+
   if let Ok(report) = guard.report().build() {
     let file = std::fs::File::create("prof.svg").unwrap();
     report.flamegraph(file).unwrap();

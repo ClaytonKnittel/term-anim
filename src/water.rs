@@ -92,6 +92,12 @@ pub enum ParticleType {
   Fixed,
 }
 
+impl ParticleType {
+  fn is_fixed(&self) -> bool {
+    matches!(self, ParticleType::Fixed)
+  }
+}
+
 pub struct Water {
   width: u32,
   height: u32,
@@ -110,6 +116,10 @@ impl Water {
       ],
       last_mouse: (-1, -1),
     }
+  }
+
+  pub fn is_wet(&self, (x, y): (i32, i32)) -> bool {
+    (0..SCALE).any(|dy| (0..SCALE).any(|dx| !self.get(SCALE * x + dx, SCALE * y + dy).is_fixed()))
   }
 
   fn idx(&self, x: i32, y: i32) -> usize {

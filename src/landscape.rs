@@ -29,6 +29,10 @@ impl Landscape {
     Self { grass, water }
   }
 
+  pub fn water_mut(&mut self) -> &mut Water {
+    &mut self.water
+  }
+
   pub fn shreek(&mut self, pos: (i32, i32)) {
     self.grass.shreek(pos);
   }

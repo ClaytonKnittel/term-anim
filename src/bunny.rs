@@ -332,12 +332,16 @@ impl<'a> Entity for Bunny<'a> {
   }
 
   fn tick(&mut self, t: usize) {
-    self.landscape.tick(t);
     self.train_scene.tick(t);
     self.basket.tick(t);
     self.hole.tick(t);
     self.carrot.tick(t);
     self.zoom.tick(t);
+
+    self.hole.maybe_dunk(self.landscape.water_mut());
+    self.basket.maybe_dunk(self.landscape.water_mut());
+
+    self.landscape.tick(t);
     self.t = t;
 
     match self.stage {

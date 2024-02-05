@@ -3,6 +3,7 @@ use termion::color::{self, AnsiValue};
 use crate::{
   entity::Entity,
   util::{explosion_path, move_per_radiate, Draw, Radiate},
+  water::Water,
 };
 
 const Z_IDX: i32 = 20;
@@ -86,6 +87,39 @@ impl Hole {
   pub fn radiate(&mut self, pos: (i32, i32)) {
     self.radiate = Some(Radiate { t: self.t, pos });
   }
+
+  fn debris_pos(
+    &self,
+    (t, targeted, _, (x, y)): &(usize, bool, char, (i32, i32)),
+  ) -> ((i32, i32), bool) {
+    let mut pos = explosion_path(
+      (self.t - t) as f32,
+      (*x, *y),
+      (self.pos.0 + 2, self.pos.1 + 2),
+    );
+    let resting = pos == (*x, *y);
+    if !targeted {
+      pos = move_per_radiate(&self.radiate, self.t, pos);
+    }
+    (pos, resting)
+  }
+
+  pub fn maybe_dunk(&mut self, water: &mut Water) {
+    self.flung_dirt = self
+      .flung_dirt
+      .clone()
+      .into_iter()
+      .filter(|&(t, targeted, c, pos)| {
+        let (pos, resting) = self.debris_pos(&(t, targeted, c, pos));
+        if resting && water.is_wet(pos) {
+          water.click(pos.0 as u32, pos.1 as u32);
+          false
+        } else {
+          true
+        }
+      })
+      .collect();
+  }
 }
 
 impl Entity for Hole {
@@ -112,15 +146,8 @@ impl Entity for Hole {
           })
         })
         .chain(self.flung_dirt.iter().map(|(t, targeted, c, (x, y))| {
-          let mut pos = explosion_path(
-            (self.t - t) as f32,
-            (*x, *y),
-            (self.pos.0 + 2, self.pos.1 + 2),
-          );
-          if !targeted {
-            pos = move_per_radiate(&self.radiate, self.t, pos);
-          }
-          let z_idx = if pos == (*x, *y) {
+          let (pos, resting) = self.debris_pos(&(*t, *targeted, *c, (*x, *y)));
+          let z_idx = if resting {
             DEBRIS_Z_IDX
           } else {
             FLYING_DEBRIS_Z_IDX

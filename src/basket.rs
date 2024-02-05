@@ -1,6 +1,6 @@
 use termion::color;
 
-use crate::{entity::Entity, peach::Peach, util::Draw};
+use crate::{entity::Entity, peach::Peach, util::Draw, water::Water};
 
 const Z_IDX: i32 = 25;
 const BG_Z_IDX: i32 = 20;
@@ -53,6 +53,10 @@ impl Basket {
 
   pub fn radiate(&mut self, pos: (i32, i32)) {
     self.peaches_mut().for_each(|peach| peach.radiate(pos));
+  }
+
+  pub fn maybe_dunk(&mut self, water: &mut Water) {
+    self.peaches_mut().for_each(|peach| peach.maybe_dunk(water));
   }
 }
 
