@@ -69,7 +69,7 @@ enum BunnyStage {
   WalkToKazoo { t: usize, init_pos: (i32, i32) },
   PlayKazoo { t: usize },
   WalkToCarrot { t: usize, init_pos: (i32, i32) },
-  EatCarrot { t: usize },
+  EatCarrot { t: usize, dialog_idx: u32 },
 }
 
 pub struct Bunny<'a> {
@@ -655,21 +655,40 @@ impl<'a> Entity for Bunny<'a> {
         const TARGET: (i32, i32) = (31, 13);
         let dt = t - initial_t;
         if dt > self.dt_to_completion(init_pos, TARGET) {
-          self.stage = BunnyStage::EatCarrot { t };
+          self.stage = BunnyStage::EatCarrot { t, dialog_idx: 0 };
           self.state = BunnyState::Walk1;
           self.direction = Direction::Left;
         } else {
           self.interpolate_pos(t - initial_t, init_pos, TARGET);
         }
       }
-      BunnyStage::EatCarrot { t: initial_t } => {
+      BunnyStage::EatCarrot {
+        t: initial_t,
+        dialog_idx,
+      } => {
         let dt = t - initial_t;
-        if dt == 50 {
-          self.dialog = Some(Dialog::new(
-            (self.pos.0 + 7, self.pos.1),
-            "Is this... a... CARROT!?!?!?!?".to_string(),
-            false,
-          ));
+        match dialog_idx {
+          0 => {
+            if dt == 50 {
+              self.dialog = Some(Dialog::new(
+                (self.pos.0 + 7, self.pos.1),
+                "Is this... a... CARROT!?!?!?!?".to_string(),
+                false,
+              ));
+            }
+          }
+          1 => {
+            if dt == 10 {
+              self.state = BunnyState::HoldKazoo;
+            } else if dt == 40 {
+              self.carrot.make_upside_down();
+            } else if dt == 80 {
+              self.carrot.set_pos((34, 14));
+              self.carrot.delete_head();
+              self.state = BunnyState::Walk1;
+            }
+          }
+          _ => unreachable!(),
         }
       }
     }
@@ -891,7 +910,19 @@ impl<'a> Entity for Bunny<'a> {
         }
       }
       BunnyStage::WalkToCarrot { t: _, init_pos: _ } => {}
-      BunnyStage::EatCarrot { t } => {}
+      BunnyStage::EatCarrot { t, dialog_idx } => {
+        if match dialog_idx {
+          0 => self.t >= t + 50,
+          1 => false,
+          _ => unreachable!(),
+        } {
+          self.stage = BunnyStage::EatCarrot {
+            t: self.t,
+            dialog_idx: dialog_idx + 1,
+          };
+          self.dialog = None;
+        }
+      }
     }
   }
 
