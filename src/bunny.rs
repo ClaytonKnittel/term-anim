@@ -662,7 +662,16 @@ impl<'a> Entity for Bunny<'a> {
           self.interpolate_pos(t - initial_t, init_pos, TARGET);
         }
       }
-      BunnyStage::EatCarrot { t } => {}
+      BunnyStage::EatCarrot { t: initial_t } => {
+        let dt = t - initial_t;
+        if dt == 50 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 7, self.pos.1),
+            "Is this... a... CARROT!?!?!?!?".to_string(),
+            false,
+          ));
+        }
+      }
     }
   }
 
