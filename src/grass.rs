@@ -73,7 +73,9 @@ impl Grass {
       Some(Shreek { t, pos: (x, y) }) => {
         let dt = self.t - t;
         let d = ((pos.0 - x).pow(2) + (pos.1 - y).pow(2)) as usize;
-        dt * dt >= d && ((dt as f32 - (d as f32).sqrt()) as i32) % 12 <= 4
+        let sqrtd = (d as f32).sqrt();
+        let diff = dt as f32 - sqrtd;
+        sqrtd <= 75. && diff <= 50. && dt * dt >= d && (diff as i32) % 12 <= 4
       }
       None => false,
     }
@@ -100,7 +102,7 @@ impl Entity for Grass {
   fn tick(&mut self, t: usize) {
     self.t = t;
     if let Some(Shreek { t, pos: _ }) = self.shreek {
-      if self.t - t > 100 {
+      if self.t - t > 125 {
         self.shreek = None;
       }
     }

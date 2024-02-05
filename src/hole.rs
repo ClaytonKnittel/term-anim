@@ -2,7 +2,7 @@ use termion::color::{self, AnsiValue};
 
 use crate::{
   entity::Entity,
-  util::{explosion_path, Draw},
+  util::{explosion_path, move_per_radiate, Draw, Radiate},
 };
 
 const Z_IDX: i32 = 20;
@@ -40,6 +40,7 @@ pub struct Hole {
   queued_dirt: Vec<(bool, char, (i32, i32))>,
   flung_dirt: Vec<(usize, bool, char, (i32, i32))>,
   kazoo: Option<(usize, (i32, i32))>,
+  radiate: Option<Radiate>,
 }
 
 impl Hole {
@@ -50,6 +51,7 @@ impl Hole {
       queued_dirt: Vec::new(),
       flung_dirt: Vec::new(),
       kazoo: None,
+      radiate: None,
     }
   }
 
@@ -79,6 +81,10 @@ impl Hole {
   pub fn set_kazoo_pos(&mut self, pos: (i32, i32)) {
     self.kazoo = self.kazoo.map(|(t, _)| (t, pos))
   }
+
+  pub fn radiate(&mut self, pos: (i32, i32)) {
+    self.radiate = Some(Radiate { t: self.t, pos });
+  }
 }
 
 impl Entity for Hole {
@@ -105,15 +111,19 @@ impl Entity for Hole {
           })
         })
         .chain(self.flung_dirt.iter().map(|(t, targeted, c, (x, y))| {
+          let mut pos = explosion_path(
+            (self.t - t) as f32,
+            (*x, *y),
+            (self.pos.0 + 2, self.pos.1 + 2),
+          );
+          if !targeted {
+            pos = move_per_radiate(&self.radiate, self.t, pos);
+          }
           (
             Draw::new(*c)
               .with_fg(color::AnsiValue::rgb(2, 1, 0))
               .with_z(DEBRIS_Z_IDX + if *targeted { 1 } else { 0 }),
-            explosion_path(
-              (self.t - t) as f32,
-              (*x, *y),
-              (self.pos.0 + 2, self.pos.1 + 2),
-            ),
+            pos,
           )
         }))
         .chain(match self.kazoo {

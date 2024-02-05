@@ -4,6 +4,35 @@ use termion::{color, style};
 
 const G: f32 = -0.1;
 
+pub struct Radiate {
+  pub t: usize,
+  pub pos: (i32, i32),
+}
+
+pub fn move_per_radiate(radiate: &Option<Radiate>, t: usize, pos: (i32, i32)) -> (i32, i32) {
+  match radiate {
+    Some(Radiate {
+      t: radiate_t,
+      pos: r_pos,
+    }) => {
+      let dt = (t - radiate_t).min(50);
+      let dx = pos.0 - r_pos.0;
+      let dy = pos.1 - r_pos.1;
+      let d = dx.pow(2) + dy.pow(2);
+      if (d as usize) < dt * dt {
+        let scale = dt as f32 / (d as f32).sqrt();
+        (
+          r_pos.0 + (dx as f32 * scale) as i32,
+          r_pos.1 + (dy as f32 * scale) as i32,
+        )
+      } else {
+        pos
+      }
+    }
+    None => pos,
+  }
+}
+
 pub fn explosion_path(dt: f32, target: (i32, i32), origin: (i32, i32)) -> (i32, i32) {
   let dx = (target.0 - origin.0) as f32;
   let dy = (target.1 - origin.1) as f32;
