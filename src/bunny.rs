@@ -627,6 +627,14 @@ impl<'a> Entity for Bunny<'a> {
           self.landscape.shreek((25, 6));
           self.basket.radiate((25, 6));
           self.hole.radiate((25, 6));
+        } else if dt == 240 {
+          self.dialog = None;
+        } else if dt == 250 {
+          self.dialog = Some(Dialog::new(
+            (self.pos.0 + 7, self.pos.1),
+            "Oh, what's that?".to_string(),
+            false,
+          ));
         }
       }
     }
